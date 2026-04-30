@@ -128,6 +128,7 @@ pub fn routes<
         .route("/token/:id", get(token))
         .route("/token/:id/transactions", get(token_transactions))
         .route("/token/ticker/:ticker", get(token_ids_by_ticker))
+        .route("/nft", get(nft_ids))
         .route("/nft/:id", get(nft));
 
     router
@@ -1367,6 +1368,37 @@ pub async fn token_ids<T: ApiServerStorage>(
         .collect();
 
     Ok(Json(serde_json::Value::Array(token_ids)))
+}
+
+pub async fn nft_ids<T: ApiServerStorage>(
+    Query(params): Query<BTreeMap<String, String>>,
+    State(state): State<ApiServerWebServerState<Arc<T>, Arc<impl TxSubmitClient>>>,
+) -> Result<impl IntoResponse, ApiServerWebServerError> {
+    let offset_and_items = get_offset_and_items(&params)?;
+
+    let nft_ids: Vec<_> = state
+        .db
+        .transaction_ro()
+        .await
+        .map_err(|e| {
+            logging::log::error!("internal error: {e}");
+            ApiServerWebServerError::ServerError(ApiServerWebServerServerError::InternalServerError)
+        })?
+        .get_nft_ids(offset_and_items.items, offset_and_items.offset)
+        .await
+        .map_err(|e| {
+            logging::log::error!("internal error: {e}");
+            ApiServerWebServerError::ServerError(ApiServerWebServerServerError::InternalServerError)
+        })?
+        .into_iter()
+        .map(|nft_id| {
+            serde_json::Value::String(
+                Address::new(&state.chain_config, nft_id).expect("addressable").into_string(),
+            )
+        })
+        .collect();
+
+    Ok(Json(serde_json::Value::Array(nft_ids)))
 }
 
 pub async fn token_ids_by_ticker<T: ApiServerStorage>(

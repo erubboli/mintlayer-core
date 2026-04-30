@@ -14,6 +14,7 @@ logging = { path = "../logging" }
 mempool = { path = "../mempool" }
 p2p = { path = "../p2p" }
 rpc = { path = "../rpc" }
+serialization = { path = "../serialization" }
 storage-lmdb = { path = "../storage/lmdb" }
 subsystem = { path = "../subsystem" }
 test-rpc-functions = { path = "../test-rpc-functions" }
@@ -21,6 +22,8 @@ utils = { path = "../utils" }
 utils-networking = { path = "../utils/networking" }
 
 anyhow.workspace = true
+async-trait.workspace = true
+axum = { workspace = true, features = ["ws"] }
 clap = { workspace = true, features = ["derive"] }
 csv.workspace = true
 directories.workspace = true
@@ -31,8 +34,9 @@ paste.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, default-features = false }
+tokio = { workspace = true, default-features = false, features = ["net", "sync"] }
 toml.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 crypto = { path = "../crypto" }

@@ -17,6 +17,7 @@
 
 mod checkpoints_from_file;
 mod config_files;
+pub mod event_relay;
 mod mock_time;
 pub mod node_controller;
 mod node_daemon_runner;

@@ -2377,6 +2377,27 @@ impl<K: AccountKeyChains> Account<K> {
         )
     }
 
+    /// Transition wallet txs that are currently `InMempool` but absent from `mempool_tx_ids`
+    /// to `Inactive`, persisting the changes to the DB and firing wallet events.
+    pub fn mark_stale_mempool_txs_as_inactive(
+        &mut self,
+        db_tx: &mut impl WalletStorageWriteLocked,
+        wallet_events: &impl WalletEvents,
+        mempool_tx_ids: &BTreeSet<Id<Transaction>>,
+    ) -> WalletResult<()> {
+        let changed =
+            self.output_cache.mark_in_mempool_txs_not_in_set_as_inactive(mempool_tx_ids);
+        let account_id = self.get_account_id();
+        for tx_id in &changed {
+            if let Some(wallet_tx) = self.output_cache.txs_with_unconfirmed().get(tx_id) {
+                let id = AccountWalletTxId::new(account_id.clone(), wallet_tx.id());
+                db_tx.set_transaction(&id, wallet_tx)?;
+                wallet_events.set_transaction(self.account_index(), wallet_tx);
+            }
+        }
+        Ok(())
+    }
+
     fn scan_new_unconfirmed_transactions(
         &mut self,
         transactions: &[SignedTransaction],

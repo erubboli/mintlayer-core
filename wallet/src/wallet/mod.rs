@@ -38,7 +38,7 @@ use common::{
         TransactionCreationError, TxInput, TxOutput, TxOutputTag, UtxoOutPoint,
     },
     primitives::{
-        id::{hash_encoded, WithId},
+        id::{hash_encoded, Idable, WithId},
         Amount, BlockHeight, Id, H256,
     },
     size_estimation::SizeEstimationError,
@@ -2657,15 +2657,25 @@ where
         Ok(())
     }
 
-    /// Adds unconfirmed transactions and UTXOs from the mempool
+    /// Adds unconfirmed transactions and UTXOs from the mempool.
+    /// Also transitions wallet txs that were previously `InMempool` but are absent from
+    /// `transactions` (evicted or lost on node restart) to `Inactive`.
     pub fn add_mempool_transactions(
         &mut self,
         transactions: &[SignedTransaction],
         wallet_events: &impl WalletEvents,
     ) -> WalletResult<()> {
+        let mempool_tx_ids: BTreeSet<Id<Transaction>> =
+            transactions.iter().map(|tx| tx.transaction().get_id()).collect();
+
         let mut db_tx = self.db.transaction_rw(None)?;
 
         for account in self.accounts.values_mut() {
+            account.mark_stale_mempool_txs_as_inactive(
+                &mut db_tx,
+                wallet_events,
+                &mempool_tx_ids,
+            )?;
             account.scan_new_inmempool_transactions(transactions, &mut db_tx, wallet_events)?;
         }
 

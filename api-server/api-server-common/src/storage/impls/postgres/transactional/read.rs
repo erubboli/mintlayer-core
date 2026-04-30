@@ -386,6 +386,17 @@ impl ApiServerStorageRead for ApiServerPostgresTransactionalRo<'_> {
         Ok(res)
     }
 
+    async fn get_nft_ids(
+        &self,
+        len: u32,
+        offset: u64,
+    ) -> Result<Vec<TokenId>, ApiServerStorageError> {
+        let conn = QueryFromConnection::new(self.connection.as_ref().expect(CONN_ERR));
+        let res = conn.get_nft_ids(len, offset).await?;
+
+        Ok(res)
+    }
+
     async fn get_token_ids_by_ticker(
         &self,
         len: u32,

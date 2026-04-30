@@ -2527,15 +2527,15 @@ impl<'a, 'b> QueryFromConnection<'a, 'b> {
             .query(
                 r#"
                 WITH count_tokens AS (
-                    SELECT count(token_id) FROM ml.fungible_token
+                    SELECT count(DISTINCT token_id) FROM ml.fungible_token
                 )
-                (SELECT token_id
+                (SELECT DISTINCT token_id
                  FROM ml.fungible_token
                  ORDER BY token_id
                  OFFSET $1
                  LIMIT $2)
                 UNION ALL
-                (SELECT nft_id
+                (SELECT DISTINCT nft_id
                  FROM ml.nft_issuance
                  ORDER BY nft_id
                  OFFSET GREATEST($1 - (SELECT * FROM count_tokens), 0)
@@ -2545,6 +2545,30 @@ impl<'a, 'b> QueryFromConnection<'a, 'b> {
                        ELSE 0 END);
             "#,
                 &[&offset, &len],
+            )
+            .await
+            .map_err(|e| ApiServerStorageError::LowLevelStorageError(e.to_string()))?
+            .into_iter()
+            .map(|row| -> Result<TokenId, ApiServerStorageError> {
+                let token_id: Vec<u8> = row.get(0);
+                let token_id = TokenId::decode_all(&mut token_id.as_slice())
+                    .map_err(|_| ApiServerStorageError::AddressableError)?;
+                Ok(token_id)
+            })
+            .collect()
+    }
+
+    pub async fn get_nft_ids(
+        &self,
+        len: u32,
+        offset: u64,
+    ) -> Result<Vec<TokenId>, ApiServerStorageError> {
+        let len = len as i64;
+        let offset = offset as i64;
+        self.tx
+            .query(
+                r#"SELECT DISTINCT nft_id FROM ml.nft_issuance ORDER BY nft_id LIMIT $1 OFFSET $2"#,
+                &[&len, &offset],
             )
             .await
             .map_err(|e| ApiServerStorageError::LowLevelStorageError(e.to_string()))?
@@ -2572,16 +2596,16 @@ impl<'a, 'b> QueryFromConnection<'a, 'b> {
             .query(
                 r#"
                 WITH count_tokens AS (
-                    SELECT count(token_id) FROM ml.fungible_token WHERE ticker ILIKE $3
+                    SELECT count(DISTINCT token_id) FROM ml.fungible_token WHERE ticker ILIKE $3
                 )
-                (SELECT token_id
+                (SELECT DISTINCT token_id
                  FROM ml.fungible_token
                  WHERE ticker ILIKE $3
                  ORDER BY token_id
                  OFFSET $1
                  LIMIT $2)
                 UNION ALL
-                (SELECT nft_id
+                (SELECT DISTINCT nft_id
                  FROM ml.nft_issuance
                  WHERE ticker ILIKE $3
                  ORDER BY nft_id

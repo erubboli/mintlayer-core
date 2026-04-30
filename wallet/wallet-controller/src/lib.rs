@@ -1497,6 +1497,25 @@ where
                                 log::error!("Mempool notifications channel is closed.");
                                 tokio::time::sleep(ERROR_DELAY).await;
 
+                                // The node may have restarted (clearing the mempool), so re-fetch
+                                // the current mempool snapshot to mark evicted txs as Inactive.
+                                match self.rpc_client.mempool_get_transactions().await {
+                                    Ok(txs) => {
+                                        if let Err(err) = self
+                                            .wallet
+                                            .add_mempool_transactions(&txs, &self.wallet_events)
+                                        {
+                                            log::error!(
+                                                "Error refreshing mempool on reconnect: {err}"
+                                            );
+                                        }
+                                    }
+                                    Err(err) => {
+                                        log::error!(
+                                            "Failed to fetch mempool on reconnect: {err}"
+                                        );
+                                    }
+                                }
 
                                 match self.rpc_client
                                     .mempool_subscribe_to_events()

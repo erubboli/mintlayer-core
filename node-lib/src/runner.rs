@@ -37,7 +37,8 @@ use test_rpc_functions::{
 };
 
 use crate::{
-    config_files::{NodeConfigFile, DEFAULT_P2P_NETWORKING_ENABLED, DEFAULT_RPC_ENABLED},
+    config_files::{EventRelayConfigFile, NodeConfigFile, DEFAULT_P2P_NETWORKING_ENABLED, DEFAULT_RPC_ENABLED},
+    event_relay::EventRelayServer,
     mock_time::set_mock_time,
     node_controller::NodeController,
     options::{default_data_dir, OptionsWithResolvedCommand, RunOptions},
@@ -215,7 +216,7 @@ async fn initialize(
         .with_method_list("node_list_methods")
         .register(crate::rpc::init(
             manager.make_shutdown_trigger(),
-            chain_config,
+            Arc::clone(&chain_config),
         ))
         .register(block_prod.clone().into_rpc())
         .register(chainstate.clone().into_rpc())
@@ -227,6 +228,24 @@ async fn initialize(
         let rpc = rpc.await?;
         let _rpc = manager.add_subsystem("rpc", rpc);
     };
+
+    // Event relay (WebSocket push server)
+    let event_relay_config = node_config.event_relay.unwrap_or_default();
+    if event_relay_config.event_relay_enabled.unwrap_or(false) {
+        let bind_address = event_relay_config
+            .bind_address
+            .unwrap_or_else(|| EventRelayConfigFile::default_bind_address(&chain_config));
+
+        let event_relay = EventRelayServer::start(
+            bind_address,
+            chainstate.clone(),
+            mempool.clone(),
+        )
+        .await
+        .context("Failed to start event relay")?;
+
+        let _event_relay = manager.add_subsystem("event_relay", event_relay);
+    }
 
     let controller = NodeController {
         shutdown_trigger: manager.make_shutdown_trigger(),

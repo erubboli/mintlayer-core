@@ -34,7 +34,7 @@ use tracing::Instrument;
 
 use common::{
     chain::{config::ChainConfig, GenBlock, Transaction},
-    primitives::Id,
+    primitives::{Id, Idable},
     time_getter::TimeGetter,
 };
 use logging::log;
@@ -352,13 +352,35 @@ where
                 protocol_version,
                 block_sync_msg_receiver,
                 transaction_sync_msg_receiver,
-            } => self.register_peer(
-                peer_id,
-                common_services,
-                protocol_version,
-                block_sync_msg_receiver,
-                transaction_sync_msg_receiver,
-            ),
+            } => {
+                self.register_peer(
+                    peer_id,
+                    common_services,
+                    protocol_version,
+                    block_sync_msg_receiver,
+                    transaction_sync_msg_receiver,
+                );
+                // Back-fill existing mempool transactions to the newly connected peer so txs
+                // that entered the mempool before this peer connected are still propagated.
+                match self.mempool_handle.call(|m| m.get_all()).await {
+                    Ok(txs) => {
+                        if let Some(peer_ctx) = self.peers.get(&peer_id) {
+                            for tx in &txs {
+                                let event =
+                                    LocalEvent::MempoolNewTx(tx.transaction().get_id());
+                                for sender in &peer_ctx.local_event_senders {
+                                    let _ = sender.send(event.clone());
+                                }
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        log::error!(
+                            "Mempool error when initializing tx sync for peer {peer_id}: {err}"
+                        );
+                    }
+                }
+            }
             SyncingEvent::Disconnected { peer_id } => {
                 Self::notify_mempool_peer_disconnected(&self.mempool_handle, peer_id).await;
                 self.unregister_peer(peer_id);

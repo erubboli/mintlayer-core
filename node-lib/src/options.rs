@@ -401,6 +401,14 @@ pub struct RunOptions {
     #[clap(long, value_name = "VAL")]
     pub rpc_enabled: Option<bool>,
 
+    /// Enable/Disable the WebSocket event relay.
+    #[clap(long, value_name = "VAL")]
+    pub event_relay_enabled: Option<bool>,
+
+    /// Address to bind the WebSocket event relay to.
+    #[clap(long, value_name = "ADDR")]
+    pub event_relay_bind_address: Option<SocketAddr>,
+
     /// Username for RPC server basic authorization.
     /// If not set, the cookie file is created.
     #[clap(long, value_name = "USERNAME")]
@@ -502,6 +510,8 @@ mod tests {
             rpc_username: Default::default(),
             rpc_password: Default::default(),
             rpc_cookie_file: Default::default(),
+            event_relay_enabled: Default::default(),
+            event_relay_bind_address: Default::default(),
             min_tx_relay_fee_rate: Default::default(),
             force_allow_run_as_root_outer: Default::default(),
             enable_chainstate_heavy_checks: Default::default(),

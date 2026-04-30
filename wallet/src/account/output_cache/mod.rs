@@ -1066,6 +1066,47 @@ impl OutputCache {
         Ok(TxChanged::Yes)
     }
 
+    /// Transition all `InMempool` wallet txs that are absent from `mempool_tx_ids` to `Inactive`.
+    /// Returns the ids of changed txs.
+    pub fn mark_in_mempool_txs_not_in_set_as_inactive(
+        &mut self,
+        mempool_tx_ids: &BTreeSet<Id<Transaction>>,
+    ) -> Vec<OutPointSourceId> {
+        let to_change: Vec<(OutPointSourceId, u64)> = self
+            .txs
+            .iter()
+            .filter_map(|(tx_id, wallet_tx)| {
+                if let WalletTx::Tx(tx_data) = wallet_tx {
+                    if let TxState::InMempool(counter) = tx_data.state() {
+                        if tx_id.get_tx_id().is_some_and(|id| !mempool_tx_ids.contains(id)) {
+                            return Some((tx_id.clone(), *counter));
+                        }
+                    }
+                }
+                None
+            })
+            .collect();
+
+        let mut changed = vec![];
+        for (tx_id, counter) in &to_change {
+            let new_state = TxState::Inactive(*counter);
+            if let Some(WalletTx::Tx(tx_data)) = self.txs.get_mut(tx_id) {
+                for input in tx_data.get_signed_transaction().transaction().inputs() {
+                    if let TxInput::Utxo(outpoint) = input {
+                        if let Some(state) = self.consumed.get_mut(&outpoint) {
+                            if matches!(state, TxState::InMempool(_)) {
+                                *state = new_state;
+                            }
+                        }
+                    }
+                }
+                tx_data.set_state(new_state);
+                changed.push(tx_id.clone());
+            }
+        }
+        changed
+    }
+
     /// Update the pool states for a newly confirmed transaction
     fn update_outputs(
         &mut self,
@@ -1172,6 +1213,11 @@ impl OutputCache {
         tx_id: &OutPointSourceId,
         already_present: bool,
     ) -> Result<(), WalletError> {
+        // Conflicted/abandoned txs had their account-state effects rolled back when they were
+        // marked as such. When rebuilding from DB, we must not re-apply those effects.
+        let is_conflicted_or_abandoned =
+            matches!(tx.state(), TxState::Conflicted(_) | TxState::Abandoned);
+
         for input in tx.inputs() {
             match input {
                 TxInput::Utxo(outpoint) => {
@@ -1190,7 +1236,7 @@ impl OutputCache {
                 }
                 TxInput::Account(outpoint) => match outpoint.account() {
                     AccountSpending::DelegationBalance(delegation_id, _) => {
-                        if !already_present {
+                        if !already_present && !is_conflicted_or_abandoned {
                             if let Some(data) = self.delegations.get_mut(delegation_id) {
                                 Self::update_delegation_state(
                                     &mut self.unconfirmed_descendants,
@@ -1211,7 +1257,7 @@ impl OutputCache {
                     | AccountCommand::UnfreezeToken(token_id)
                     | AccountCommand::ChangeTokenMetadataUri(token_id, _) => {
                         if let Some(data) = self.token_issuance.get_mut(token_id) {
-                            if !already_present {
+                            if !already_present && !is_conflicted_or_abandoned {
                                 Self::update_token_issuance_state(
                                     &mut self.unconfirmed_descendants,
                                     data,
@@ -1220,7 +1266,7 @@ impl OutputCache {
                                     tx_id,
                                 )?;
                             }
-                            if is_unconfirmed {
+                            if is_unconfirmed && !is_conflicted_or_abandoned {
                                 data.unconfirmed_txs.insert(tx_id.clone());
                             } else {
                                 data.unconfirmed_txs.remove(tx_id);
@@ -1229,7 +1275,7 @@ impl OutputCache {
                     }
                     AccountCommand::ChangeTokenAuthority(token_id, authority) => {
                         if let Some(data) = self.token_issuance.get_mut(token_id) {
-                            if !already_present {
+                            if !already_present && !is_conflicted_or_abandoned {
                                 Self::update_token_issuance_state(
                                     &mut self.unconfirmed_descendants,
                                     data,
@@ -1239,7 +1285,7 @@ impl OutputCache {
                                 )?;
                                 data.authority = authority.clone();
                             }
-                            if is_unconfirmed {
+                            if is_unconfirmed && !is_conflicted_or_abandoned {
                                 data.unconfirmed_txs.insert(tx_id.clone());
                             } else {
                                 data.unconfirmed_txs.remove(tx_id);
@@ -1252,7 +1298,7 @@ impl OutputCache {
                     }
                     AccountCommand::ConcludeOrder(order_id)
                     | AccountCommand::FillOrder(order_id, _, _) => {
-                        if !already_present {
+                        if !already_present && !is_conflicted_or_abandoned {
                             let op_tag: AccountCommandTag = op.into();
                             let cmd_tag = if op_tag == AccountCommandTag::ConcludeOrder {
                                 OrderAccountCommandTag::ConcludeOrder
@@ -1276,7 +1322,7 @@ impl OutputCache {
                     OrderAccountCommand::FillOrder(order_id, _)
                     | OrderAccountCommand::FreezeOrder(order_id)
                     | OrderAccountCommand::ConcludeOrder(order_id) => {
-                        if !already_present {
+                        if !already_present && !is_conflicted_or_abandoned {
                             if let Some(data) = self.orders.get_mut(order_id) {
                                 Self::update_order_state(
                                     &mut self.unconfirmed_descendants,

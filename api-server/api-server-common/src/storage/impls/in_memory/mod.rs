@@ -756,6 +756,16 @@ impl ApiServerInMemoryStorage {
             .collect())
     }
 
+    fn get_nft_ids(&self, len: u32, offset: u64) -> Result<Vec<TokenId>, ApiServerStorageError> {
+        Ok(self
+            .nft_token_issuances
+            .keys()
+            .skip(offset as usize)
+            .take(len as usize)
+            .copied()
+            .collect())
+    }
+
     fn get_token_ids_by_ticker(
         &self,
         len: u32,

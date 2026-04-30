@@ -554,6 +554,14 @@ impl ApiServerStorageRead for ApiServerInMemoryStorageTransactionalRw<'_> {
         self.transaction.get_token_ids(len, offset)
     }
 
+    async fn get_nft_ids(
+        &self,
+        len: u32,
+        offset: u64,
+    ) -> Result<Vec<TokenId>, ApiServerStorageError> {
+        self.transaction.get_nft_ids(len, offset)
+    }
+
     async fn get_token_ids_by_ticker(
         &self,
         len: u32,

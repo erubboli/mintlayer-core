@@ -768,6 +768,12 @@ pub trait ApiServerStorageRead: Sync {
         offset: u64,
     ) -> Result<Vec<TokenId>, ApiServerStorageError>;
 
+    async fn get_nft_ids(
+        &self,
+        len: u32,
+        offset: u64,
+    ) -> Result<Vec<TokenId>, ApiServerStorageError>;
+
     async fn get_token_ids_by_ticker(
         &self,
         len: u32,

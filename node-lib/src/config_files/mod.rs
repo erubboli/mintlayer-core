@@ -19,12 +19,16 @@ pub const DEFAULT_RPC_ENABLED: bool = true;
 pub const DEFAULT_P2P_NETWORKING_ENABLED: bool = true;
 
 pub use self::{
-    chainstate_launcher::StorageBackendConfigFile, p2p::NodeTypeConfigFile, rpc::RpcConfigFile,
+    chainstate_launcher::StorageBackendConfigFile,
+    event_relay::EventRelayConfigFile,
+    p2p::NodeTypeConfigFile,
+    rpc::RpcConfigFile,
 };
 
 mod blockprod;
 mod chainstate;
 mod chainstate_launcher;
+mod event_relay;
 mod mempool;
 mod p2p;
 mod rpc;
@@ -38,8 +42,10 @@ use serde::{Deserialize, Serialize};
 use crate::RunOptions;
 
 use self::{
-    blockprod::BlockProdConfigFile, chainstate::ChainstateConfigFile,
-    chainstate_launcher::ChainstateLauncherConfigFile, mempool::MempoolConfigFile,
+    blockprod::BlockProdConfigFile,
+    chainstate::ChainstateConfigFile,
+    chainstate_launcher::ChainstateLauncherConfigFile,
+    mempool::MempoolConfigFile,
     p2p::P2pConfigFile,
 };
 
@@ -51,6 +57,7 @@ pub struct NodeConfigFile {
     // Subsystems configurations.
     pub blockprod: Option<BlockProdConfigFile>,
     pub chainstate: Option<ChainstateLauncherConfigFile>,
+    pub event_relay: Option<EventRelayConfigFile>,
     pub mempool: Option<MempoolConfigFile>,
     pub p2p: Option<P2pConfigFile>,
     pub rpc: Option<RpcConfigFile>,
@@ -61,6 +68,7 @@ impl NodeConfigFile {
         Ok(Self {
             blockprod: None,
             chainstate: None,
+            event_relay: None,
             mempool: None,
             p2p: None,
             rpc: None,
@@ -90,6 +98,7 @@ impl NodeConfigFile {
         let NodeConfigFile {
             blockprod,
             chainstate,
+            event_relay,
             mempool,
             p2p,
             rpc,
@@ -97,6 +106,11 @@ impl NodeConfigFile {
 
         let blockprod = blockprod_config(blockprod.unwrap_or_default(), options);
         let chainstate = chainstate_config(chainstate.unwrap_or_default(), options);
+        let event_relay = EventRelayConfigFile::with_run_options(
+            chain_config,
+            event_relay.unwrap_or_default(),
+            options,
+        );
         let mempool = MempoolConfigFile::with_run_options(mempool.unwrap_or_default(), options);
         let p2p = p2p_config(p2p.unwrap_or_default(), options);
         let rpc = RpcConfigFile::with_run_options(chain_config, rpc.unwrap_or_default(), options);
@@ -104,6 +118,7 @@ impl NodeConfigFile {
         Ok(Self {
             blockprod: Some(blockprod),
             chainstate: Some(chainstate),
+            event_relay: Some(event_relay),
             mempool: Some(mempool),
             p2p: Some(p2p),
             rpc: Some(rpc),
@@ -267,6 +282,7 @@ mod tests {
         let _config: BlockProdConfigFile = toml::from_str("").unwrap();
         let _config: ChainstateLauncherConfigFile = toml::from_str("").unwrap();
         let _config: ChainstateConfigFile = toml::from_str("").unwrap();
+        let _config: EventRelayConfigFile = toml::from_str("").unwrap();
         let _config: P2pConfigFile = toml::from_str("").unwrap();
         let _config: RpcConfigFile = toml::from_str("").unwrap();
     }
