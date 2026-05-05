@@ -24,12 +24,15 @@ use axum::{
     },
     response::IntoResponse,
     routing::get,
-    Router,
+    Json, Router,
 };
 use chainstate::ChainstateHandle;
 use common::{
-    chain::{GenBlock, Transaction},
-    primitives::Id,
+    chain::{
+        make_order_id, output_value::RpcOutputValue, GenBlock, OrderAccountCommand, Transaction,
+        TxInput, TxOutput,
+    },
+    primitives::{Id, Idable},
 };
 use logging::log;
 use mempool::MempoolHandle;
@@ -53,6 +56,32 @@ pub enum WsEvent {
         new_block_id: String,
         new_height: u64,
     },
+    PendingOrderCreate {
+        tx_id: String,
+        order_id: String,
+        conclude_destination: serde_json::Value,
+        give: serde_json::Value,
+        ask: serde_json::Value,
+    },
+    PendingOrderFill {
+        tx_id: String,
+        order_id: String,
+        fill_amount_atoms: String,
+    },
+    PendingOrderFreeze {
+        tx_id: String,
+        order_id: String,
+    },
+    PendingOrderConclude {
+        tx_id: String,
+        order_id: String,
+    },
+}
+
+#[derive(Clone)]
+struct AppState {
+    broadcast_tx: broadcast::Sender<WsEvent>,
+    mempool: MempoolHandle,
 }
 
 pub struct EventRelayServer {
@@ -140,9 +169,15 @@ async fn run_event_relay(
     mempool: MempoolHandle,
     mut shutdown_rx: oneshot::Receiver<()>,
 ) {
+    let state = AppState {
+        broadcast_tx: broadcast_tx.clone(),
+        mempool: mempool.clone(),
+    };
+
     let app = Router::new()
         .route("/ws", get(ws_handler))
-        .with_state(broadcast_tx.clone());
+        .route("/pending/orders", get(pending_orders_handler))
+        .with_state(state);
 
     let listener = match tokio::net::TcpListener::bind(bind_address).await {
         Ok(l) => l,
@@ -219,13 +254,16 @@ async fn fetch_and_broadcast_tx(
         .await;
 
     match result {
-        Ok(Some(tx)) => {
-            let raw_tx = tx.hex_encode();
-            let event = WsEvent::NewTx {
-                tx_id: format!("{:x}", tx_id),
+        Ok(Some(signed_tx)) => {
+            let tx_id_str = format!("{:x}", tx_id);
+            let raw_tx = signed_tx.hex_encode();
+            let _ = broadcast_tx.send(WsEvent::NewTx {
+                tx_id: tx_id_str.clone(),
                 raw_tx,
-            };
-            let _ = broadcast_tx.send(event);
+            });
+            for event in extract_order_events(signed_tx.transaction(), &tx_id_str) {
+                let _ = broadcast_tx.send(event);
+            }
         }
         Ok(None) => {
             // tx was evicted from mempool before we could fetch it
@@ -236,15 +274,103 @@ async fn fetch_and_broadcast_tx(
     }
 }
 
+fn extract_order_events(tx: &Transaction, tx_id_str: &str) -> Vec<WsEvent> {
+    let mut events = Vec::new();
+
+    for output in tx.outputs() {
+        if let TxOutput::CreateOrder(order_data) = output {
+            match make_order_id(tx.inputs()) {
+                Ok(order_id) => {
+                    let give = RpcOutputValue::from_output_value(order_data.give());
+                    let ask = RpcOutputValue::from_output_value(order_data.ask());
+                    match (give, ask) {
+                        (Some(give), Some(ask)) => {
+                            events.push(WsEvent::PendingOrderCreate {
+                                tx_id: tx_id_str.to_owned(),
+                                order_id: format!("{:x}", order_id),
+                                conclude_destination: serde_json::to_value(
+                                    order_data.conclude_key(),
+                                )
+                                .unwrap_or(serde_json::Value::Null),
+                                give: serde_json::to_value(give)
+                                    .unwrap_or(serde_json::Value::Null),
+                                ask: serde_json::to_value(ask)
+                                    .unwrap_or(serde_json::Value::Null),
+                            });
+                        }
+                        _ => {
+                            log::warn!(
+                                "Event relay: skipping CreateOrder with non-V1 currency in tx {tx_id_str}"
+                            );
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::warn!(
+                        "Event relay: failed to compute order_id for tx {tx_id_str}: {e}"
+                    );
+                }
+            }
+        }
+    }
+
+    for input in tx.inputs() {
+        if let TxInput::OrderAccountCommand(cmd) = input {
+            match cmd {
+                OrderAccountCommand::FillOrder(order_id, amount) => {
+                    events.push(WsEvent::PendingOrderFill {
+                        tx_id: tx_id_str.to_owned(),
+                        order_id: format!("{:x}", order_id),
+                        fill_amount_atoms: amount.into_atoms().to_string(),
+                    });
+                }
+                OrderAccountCommand::FreezeOrder(order_id) => {
+                    events.push(WsEvent::PendingOrderFreeze {
+                        tx_id: tx_id_str.to_owned(),
+                        order_id: format!("{:x}", order_id),
+                    });
+                }
+                OrderAccountCommand::ConcludeOrder(order_id) => {
+                    events.push(WsEvent::PendingOrderConclude {
+                        tx_id: tx_id_str.to_owned(),
+                        order_id: format!("{:x}", order_id),
+                    });
+                }
+            }
+        }
+    }
+
+    events
+}
+
+async fn pending_orders_handler(State(state): State<AppState>) -> Json<Vec<WsEvent>> {
+    match state.mempool.call(|m| m.get_all()).await {
+        Ok(txs) => {
+            let events = txs
+                .iter()
+                .flat_map(|signed_tx| {
+                    let tx_id_str = format!("{:x}", signed_tx.transaction().get_id());
+                    extract_order_events(signed_tx.transaction(), &tx_id_str)
+                })
+                .collect();
+            Json(events)
+        }
+        Err(e) => {
+            log::warn!("Event relay: failed to get all transactions from mempool: {e}");
+            Json(vec![])
+        }
+    }
+}
+
 fn format_block_id(id: Id<GenBlock>) -> String {
     format!("{:x}", id)
 }
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    State(broadcast_tx): State<broadcast::Sender<WsEvent>>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_ws(socket, broadcast_tx))
+    ws.on_upgrade(move |socket| handle_ws(socket, state.broadcast_tx))
 }
 
 async fn handle_ws(
