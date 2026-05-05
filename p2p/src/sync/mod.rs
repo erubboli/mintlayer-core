@@ -418,6 +418,7 @@ pub async fn subscribe_to_new_tip(
                 } => {
                     let _ = sender.send(block_id).log_err_pfx("The new tip receiver closed");
                 }
+                chainstate::ChainstateEvent::Reorganized { .. } => {}
             },
         );
 

@@ -27,6 +27,12 @@ pub enum RpcEvent {
         id: Id<GenBlock>,
         height: BlockHeight,
     },
+    Reorganized {
+        old_tip_id: Id<GenBlock>,
+        old_tip_height: BlockHeight,
+        new_tip_id: Id<GenBlock>,
+        new_tip_height: BlockHeight,
+    },
 }
 
 impl RpcEvent {
@@ -37,6 +43,17 @@ impl RpcEvent {
                 height,
                 is_initial_block_download: _,
             } => Self::NewTip { id, height },
+            ChainstateEvent::Reorganized {
+                old_tip_id,
+                old_tip_height,
+                new_tip_id,
+                new_tip_height,
+            } => Self::Reorganized {
+                old_tip_id,
+                old_tip_height,
+                new_tip_id,
+                new_tip_height,
+            },
         }
     }
 }

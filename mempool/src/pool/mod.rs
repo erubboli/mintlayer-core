@@ -454,6 +454,7 @@ impl<M: MemoryUsageEstimator + ShallowClone> Mempool<M> {
                 height,
                 is_initial_block_download,
             } => self.on_new_tip(id, height, is_initial_block_download)?,
+            ChainstateEvent::Reorganized { .. } => {}
         };
         Ok(())
     }

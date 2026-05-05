@@ -78,6 +78,7 @@ impl ChainstateEventHandler {
                     ChainstateEvent::NewTip { .. } => {
                         self.chain_info_updated = true;
                     }
+                    ChainstateEvent::Reorganized { .. } => {}
                 },
                 None => {
                     // Node is stopped

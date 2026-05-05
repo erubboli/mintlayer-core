@@ -251,6 +251,7 @@ fn subscribe(chainstate: &mut TestChainstate, n: usize) -> EventList {
             } => {
                 events_.lock().unwrap().push((block_id, block_height));
             }
+            ChainstateEvent::Reorganized { .. } => {}
         });
         chainstate.subscribe_to_subsystem_events(handler);
     }

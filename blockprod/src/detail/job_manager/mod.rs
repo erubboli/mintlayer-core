@@ -293,6 +293,7 @@ impl JobManager {
                                             "Chainstate subscriber failed to send new tip",
                                         );
                                     }
+                                    ChainstateEvent::Reorganized { .. } => {}
                                 },
                             );
 

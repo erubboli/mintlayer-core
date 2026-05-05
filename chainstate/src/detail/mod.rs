@@ -38,7 +38,8 @@ use chainstate_storage::{
 };
 use chainstate_types::{
     pos_randomness::PoSRandomness, BlockIndex, BlockStatus, BlockValidationStage, EpochData,
-    EpochStorageWrite, GenBlockIndexRef, PropertyQueryError, SealedStorageTag, TipStorageTag,
+    EpochStorageWrite, GenBlockIndex, GenBlockIndexRef, PropertyQueryError, SealedStorageTag,
+    TipStorageTag,
 };
 use chainstateref::{ChainstateRef, ReorgError};
 use common::{
@@ -286,6 +287,18 @@ impl<S: BlockchainStorage, V: TransactionVerificationStrategy> Chainstate<S, V> 
             id: *best_block_index.block_id(),
             height: best_block_index.block_height(),
             is_initial_block_download,
+        };
+
+        self.rpc_events.broadcast(&event);
+        self.subsystem_events.broadcast(event);
+    }
+
+    fn broadcast_reorg_event(&mut self, old_tip: &GenBlockIndex, new_tip: &BlockIndex) {
+        let event = ChainstateEvent::Reorganized {
+            old_tip_id: old_tip.block_id(),
+            old_tip_height: old_tip.block_height(),
+            new_tip_id: (*new_tip.block_id()).into(),
+            new_tip_height: new_tip.block_height(),
         };
 
         self.rpc_events.broadcast(&event);
@@ -620,6 +633,12 @@ impl<S: BlockchainStorage, V: TransactionVerificationStrategy> Chainstate<S, V> 
     ) -> Result<Option<BlockIndex>, BlockError> {
         let block_id = block.get_id();
 
+        let old_tip = self
+            .make_db_tx_ro()
+            .map_err(BlockError::from)?
+            .get_best_block_index()
+            .map_err(BlockError::BestBlockIndexQueryError)?;
+
         // If this is Some, it's the new best block index.
         let best_block_index_after_process_block_opt =
             self.attempt_to_process_block(block, block_source)?;
@@ -634,6 +653,18 @@ impl<S: BlockchainStorage, V: TransactionVerificationStrategy> Chainstate<S, V> 
             let best_block_index_ref = GenBlockIndexRef::Block(best_block_index);
             self.update_initial_block_download_flag(best_block_index_ref, false)?;
             self.broadcast_new_tip_event(best_block_index_ref, self.is_initial_block_download());
+
+            // A reorg occurred when the new tip does not extend the old tip directly.
+            if best_block_index.prev_block_id() != &old_tip.block_id() {
+                log::warn!(
+                    "Chain reorganization: old tip {:x} (height {}) -> new tip {:x} (height {})",
+                    old_tip.block_id(),
+                    old_tip.block_height(),
+                    best_block_index.block_id(),
+                    best_block_index.block_height(),
+                );
+                self.broadcast_reorg_event(&old_tip, best_block_index);
+            }
 
             let compact_target = match best_block_index.block_header().consensus_data() {
                 ConsensusData::None => Compact::from(Uint256::ZERO),

@@ -400,6 +400,7 @@ fn subscribe_to_events(tf: &mut TestFramework, events: &EventList) {
                 events.lock().unwrap().push((id, height));
                 assert!(!events.lock().unwrap().is_empty());
             }
+            ChainstateEvent::Reorganized { .. } => {}
         },
     );
     tf.chainstate.subscribe_to_subsystem_events(subscribe_func);

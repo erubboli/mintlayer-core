@@ -47,6 +47,12 @@ pub enum WsEvent {
         block_id: String,
         height: u64,
     },
+    Reorganized {
+        old_block_id: String,
+        old_height: u64,
+        new_block_id: String,
+        new_height: u64,
+    },
 }
 
 pub struct EventRelayServer {
@@ -157,6 +163,20 @@ async fn run_event_relay(
                             let event = WsEvent::NewBlock {
                                 block_id: format_block_id(id),
                                 height: height.into_int(),
+                            };
+                            let _ = broadcast_tx.send(event);
+                        }
+                        Some(chainstate::ChainstateEvent::Reorganized {
+                            old_tip_id,
+                            old_tip_height,
+                            new_tip_id,
+                            new_tip_height,
+                        }) => {
+                            let event = WsEvent::Reorganized {
+                                old_block_id: format_block_id(old_tip_id),
+                                old_height: old_tip_height.into_int(),
+                                new_block_id: format_block_id(new_tip_id),
+                                new_height: new_tip_height.into_int(),
                             };
                             let _ = broadcast_tx.send(event);
                         }

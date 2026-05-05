@@ -59,6 +59,12 @@ pub enum ChainstateEvent {
         height: BlockHeight,
         is_initial_block_download: bool,
     },
+    Reorganized {
+        old_tip_id: Id<GenBlock>,
+        old_tip_height: BlockHeight,
+        new_tip_id: Id<GenBlock>,
+        new_tip_height: BlockHeight,
+    },
 }
 
 /// A struct that will be used to print ChainstateEvent when it becomes a part of tracing's span.
@@ -77,6 +83,17 @@ impl std::fmt::Display for ChainstateEventTracingWrapper<'_> {
                 write!(
                     f,
                     "NewTip({block_id}, {block_height}, ibd={is_initial_block_download})"
+                )
+            }
+            ChainstateEvent::Reorganized {
+                old_tip_id,
+                old_tip_height,
+                new_tip_id,
+                new_tip_height,
+            } => {
+                write!(
+                    f,
+                    "Reorganized({old_tip_id}@{old_tip_height} -> {new_tip_id}@{new_tip_height})"
                 )
             }
         }
