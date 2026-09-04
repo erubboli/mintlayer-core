@@ -49,7 +49,8 @@ pub fn group_outputs<T, Grouped: Clone>(
             TxOutput::CreateDelegationId(_, _)
             | TxOutput::IssueFungibleToken(_)
             | TxOutput::IssueNft(_, _, _)
-            | TxOutput::DataDeposit(_) => continue,
+            | TxOutput::DataDeposit(_)
+            | TxOutput::ZkBatchSettlement(_) => continue,
             TxOutput::ProduceBlockFromStake(_, _) => {
                 return Err(WalletError::UnsupportedTransactionOutput(Box::new(
                     get_tx_output(&output).clone(),
@@ -107,6 +108,7 @@ pub fn group_outputs_with_issuance_fee<T, Grouped: Clone>(
                 OutputValue::Coin(chain_config.data_deposit_fee(block_height))
             }
             TxOutput::CreateDelegationId(_, _) => continue,
+            TxOutput::ZkBatchSettlement(_) => continue,
             TxOutput::ProduceBlockFromStake(_, _) => {
                 return Err(WalletError::UnsupportedTransactionOutput(Box::new(
                     get_tx_output(&output).clone(),
@@ -157,7 +159,8 @@ fn output_spendable_value(output: &TxOutput) -> Result<(Currency, Amount), UtxoS
         | TxOutput::DelegateStaking(_, _)
         | TxOutput::IssueFungibleToken(_)
         | TxOutput::DataDeposit(_)
-        | TxOutput::CreateOrder(_) => {
+        | TxOutput::CreateOrder(_)
+        | TxOutput::ZkBatchSettlement(_) => {
             return Err(UtxoSelectorError::UnsupportedTransactionOutput(Box::new(
                 output.clone(),
             )));

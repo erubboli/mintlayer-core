@@ -51,6 +51,8 @@ pub enum IOPolicyError {
     MultipleDelegationCreated,
     #[error("Attempted to create multiple orders in a single tx")]
     MultipleOrdersCreated,
+    #[error("Attempted to create multiple ZK batch settlements in a single tx")]
+    MultipleZkBatchSettlementsInTransaction,
     #[error("Attempted to produce block in a tx")]
     ProduceBlockInTx,
     #[error("Attempted to provide multiple account command inputs in a single tx")]
@@ -80,7 +82,8 @@ pub fn calculate_tokens_burned_in_outputs(
             | TxOutput::IssueNft(_, _, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => None,
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => None,
         })
         .sum::<Option<Amount>>()
         .ok_or(ConnectTransactionError::BurnAmountSumError(tx.get_id()))
@@ -243,7 +246,8 @@ fn check_issuance_fee_burn_v0(
                 | TxOutput::DataDeposit(_)
                 | TxOutput::DelegateStaking(_, _)
                 | TxOutput::Htlc(_, _)
-                | TxOutput::CreateOrder(_) => None,
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => None,
             })
             .sum::<Option<Amount>>()
             .ok_or_else(|| ConnectTransactionError::BurnAmountSumError(tx.get_id()))?;
@@ -288,6 +292,7 @@ fn check_zero_token_transfers(tx: &Transaction) -> Result<(), ConnectTransaction
             // `OrderWithZeroValue` in orders-accounting. So we don't check token ids inside
             // `OrderData` here.
             TxOutput::CreateOrder(_) => None,
+            TxOutput::ZkBatchSettlement(_) => None,
         };
 
         if let Some(output_value) = output_value {

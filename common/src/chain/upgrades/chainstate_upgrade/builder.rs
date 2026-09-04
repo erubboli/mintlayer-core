@@ -18,6 +18,7 @@ use crate::chain::{
     FrozenTokensValidationVersion, HtlcActivated, OrdersActivated, OrdersVersion,
     RewardDistributionVersion, SighashInputCommitmentVersion, StakerDestinationUpdateForbidden,
     TokenIdGenerationVersion, TokenIssuanceVersion, TokensFeeVersion, ZeroTokenTransferForbidden,
+    ZkSettlementActivated,
     upgrades::chainstate_upgrade::{
         ChangeTokenMetadataUriValidityCheckRequired, PoolIdMismatchInKernelUtxoAndPoSDataForbidden,
     },
@@ -73,6 +74,7 @@ impl ChainstateUpgradeBuilder {
             frozen_tokens_validation_version: FrozenTokensValidationVersion::V1,
             htlc_activated: HtlcActivated::Yes,
             orders_activated: OrdersActivated::Yes,
+            zk_settlement_activated: ZkSettlementActivated::Yes,
             orders_version: OrdersVersion::V1,
             staker_destination_update_forbidden: StakerDestinationUpdateForbidden::Yes,
             token_id_generation_version: TokenIdGenerationVersion::V1,
@@ -97,6 +99,7 @@ impl ChainstateUpgradeBuilder {
     builder_method!(frozen_tokens_validation_version: FrozenTokensValidationVersion);
     builder_method!(htlc_activated: HtlcActivated);
     builder_method!(orders_activated: OrdersActivated);
+    builder_method!(zk_settlement_activated: ZkSettlementActivated);
     builder_method!(orders_version: OrdersVersion);
     builder_method!(staker_destination_update_forbidden: StakerDestinationUpdateForbidden);
     builder_method!(token_id_generation_version: TokenIdGenerationVersion);

@@ -836,7 +836,8 @@ where
                         | TxOutput::IssueFungibleToken(_)
                         | TxOutput::DelegateStaking(_, _)
                         | TxOutput::DataDeposit(_)
-                        | TxOutput::CreateOrder(_) => return None,
+                        | TxOutput::CreateOrder(_)
+                        | TxOutput::ZkBatchSettlement(_) => return None,
                     };
 
                     match val {

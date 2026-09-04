@@ -86,7 +86,8 @@ fn is_htlc_output(output: &TxOutput) -> bool {
         | TxOutput::IssueFungibleToken(_)
         | TxOutput::IssueNft(_, _, _)
         | TxOutput::DataDeposit(_)
-        | TxOutput::CreateOrder(_) => false,
+        | TxOutput::CreateOrder(_)
+        | TxOutput::ZkBatchSettlement(_) => false,
         TxOutput::Htlc(_, _) => true,
     }
 }

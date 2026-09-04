@@ -128,6 +128,9 @@ pub enum SignerError {
     #[error("Tokens V0 are not supported")]
     UnsupportedTokensV0,
 
+    #[error("ZkBatchSettlement outputs are not supported by the signer")]
+    UnsupportedZkBatchSettlement,
+
     #[error("Invalid TxOutput type as UTXO, cannot be spent")]
     InvalidUtxo,
 
@@ -154,6 +157,9 @@ impl From<PrimitivesConvertersError> for SignerError {
     fn from(value: PrimitivesConvertersError) -> Self {
         match value {
             PrimitivesConvertersError::UnsupportedTokenV0 => Self::UnsupportedTokensV0,
+            PrimitivesConvertersError::UnsupportedZkBatchSettlement => {
+                Self::UnsupportedZkBatchSettlement
+            }
         }
     }
 }

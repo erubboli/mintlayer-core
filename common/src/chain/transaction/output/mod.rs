@@ -27,6 +27,7 @@ use crate::{
         output_value::OutputValue,
         output_values_holder::OutputValuesHolder,
         tokens::{IsTokenFreezable, NftIssuance, TokenId, TokenIssuance, TokenTotalSupply},
+        zk::ZkBatchSettlementData,
     },
     primitives::{Amount, Id},
     text_summary::TextSummary,
@@ -183,6 +184,11 @@ pub enum TxOutput {
     /// and transfer remaining balances out closing the account.
     #[codec(index = 11)]
     CreateOrder(Box<OrderData>),
+
+    /// Settle a ZKThunder L2 batch on Mintlayer. Non-spendable.
+    /// Contains a ZK proof attesting to the validity of the L2 state transition.
+    #[codec(index = 12)]
+    ZkBatchSettlement(ZkBatchSettlementData),
 }
 
 impl TxOutput {
@@ -198,7 +204,8 @@ impl TxOutput {
             | TxOutput::IssueNft(_, _, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => None,
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => None,
             TxOutput::LockThenTransfer(_, _, tl) => Some(tl),
         }
     }
@@ -371,6 +378,15 @@ impl TextSummary for TxOutput {
                 fmt_val(order.ask()),
                 fmt_val(order.give()),
             ),
+            TxOutput::ZkBatchSettlement(data) => format!(
+                "ZkBatchSettlement(l2_chain_id: {}, batch_number: {}, state_root: 0x{}, protocol_version: {}, proof_type: {:?}, proof_size: {})",
+                data.l2_chain_id,
+                data.batch_number,
+                hex::encode(data.state_root),
+                data.protocol_version,
+                data.proof_type,
+                data.proof.len(),
+            ),
         }
     }
 }
@@ -399,7 +415,8 @@ impl OutputValuesHolder for TxOutput {
             | TxOutput::DelegateStaking(_, _)
             | TxOutput::IssueFungibleToken(_)
             | TxOutput::IssueNft(_, _, _)
-            | TxOutput::DataDeposit(_) => {}
+            | TxOutput::DataDeposit(_)
+            | TxOutput::ZkBatchSettlement(_) => {}
         }
 
         values.into_iter()

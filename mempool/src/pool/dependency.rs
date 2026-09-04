@@ -137,7 +137,8 @@ impl TxRequiredDependency {
             | TxOutput::IssueNft(_, _, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => None,
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => None,
         }
     }
 
@@ -262,7 +263,8 @@ impl TxProvidedNonUtxoDependency {
             | TxOutput::ProduceBlockFromStake(_, _)
             | TxOutput::Burn(_)
             | TxOutput::DelegateStaking(_, _)
-            | TxOutput::DataDeposit(_) => None,
+            | TxOutput::DataDeposit(_)
+            | TxOutput::ZkBatchSettlement(_) => None,
         }
     }
 

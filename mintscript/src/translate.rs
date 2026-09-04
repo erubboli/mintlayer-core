@@ -203,6 +203,7 @@ impl<C: SignatureInfoProvider> TranslateInput<C> for SignedTransaction {
                 TxOutput::Burn(_val) => Err(TranslationError::Unspendable),
                 TxOutput::DataDeposit(_data) => Err(TranslationError::Unspendable),
                 TxOutput::CreateOrder(_) => Err(TranslationError::Unspendable),
+                TxOutput::ZkBatchSettlement(_) => Err(TranslationError::Unspendable),
             },
             InputInfo::Account { outpoint } => match outpoint.account() {
                 AccountSpending::DelegationBalance(delegation_id, _amount) => {
@@ -273,6 +274,7 @@ impl<C: SignatureInfoProvider> TranslateInput<C> for BlockRewardTransactable<'_>
                     TxOutput::CreateDelegationId(_, _)
                     | TxOutput::Burn(_)
                     | TxOutput::DataDeposit(_)
+                    | TxOutput::ZkBatchSettlement(_)
                     | TxOutput::DelegateStaking(_, _)
                     | TxOutput::IssueFungibleToken(_)
                     | TxOutput::CreateOrder(_) => Err(TranslationError::Unspendable),
@@ -337,7 +339,8 @@ impl<C: InputInfoProvider> TranslateInput<C> for TimelockOnly {
                 | TxOutput::DelegateStaking(_, _)
                 | TxOutput::Burn(_)
                 | TxOutput::DataDeposit(_)
-                | TxOutput::CreateOrder(_) => Err(TranslationError::Unspendable),
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => Err(TranslationError::Unspendable),
             },
             InputInfo::Account { outpoint } => match outpoint.account() {
                 AccountSpending::DelegationBalance(_deleg_id, _amt) => Ok(WitnessScript::TRUE),
@@ -434,6 +437,7 @@ impl<C: SignatureInfoProvider> TranslateInput<C> for SignatureOnlyTx {
                 TxOutput::Burn(_val) => Err(TranslationError::Unspendable),
                 TxOutput::DataDeposit(_data) => Err(TranslationError::Unspendable),
                 TxOutput::CreateOrder(_) => Err(TranslationError::Unspendable),
+                TxOutput::ZkBatchSettlement(_) => Err(TranslationError::Unspendable),
             },
             InputInfo::Account { outpoint } => match outpoint.account() {
                 AccountSpending::DelegationBalance(delegation_id, _amount) => {

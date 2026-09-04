@@ -157,7 +157,8 @@ impl PartiallySignedTransactionV1 {
                 | TxOutput::IssueFungibleToken(_)
                 | TxOutput::CreateStakePool(_, _)
                 | TxOutput::IssueNft(_, _, _)
-                | TxOutput::DataDeposit(_) => {}
+                | TxOutput::DataDeposit(_)
+                | TxOutput::ZkBatchSettlement(_) => {}
             }
             Ok(())
         };

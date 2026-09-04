@@ -1077,7 +1077,8 @@ fn make_change_path(
         | TxOutput::IssueNft(_, _, _)
         | TxOutput::DataDeposit(_)
         | TxOutput::Htlc(_, _)
-        | TxOutput::CreateOrder(_) => return Ok(None),
+        | TxOutput::CreateOrder(_)
+        | TxOutput::ZkBatchSettlement(_) => return Ok(None),
     };
     let Some(pub_key) = key_chain.find_public_key(change_transfer_dest) else {
         return Ok(None);

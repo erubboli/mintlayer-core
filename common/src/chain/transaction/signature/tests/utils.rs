@@ -153,6 +153,29 @@ pub fn generate_input_utxo_for_tag(rng: &mut impl CryptoRng, tag: TxOutputTag) -
             );
             TxOutput::CreateOrder(Box::new(order_data))
         }
+        TxOutputTag::ZkBatchSettlement => {
+            TxOutput::ZkBatchSettlement(make_random_zk_batch_settlement_data(rng))
+        }
+    }
+}
+
+pub fn make_random_zk_batch_settlement_data(
+    rng: &mut impl CryptoRng,
+) -> crate::chain::ZkBatchSettlementData {
+    crate::chain::ZkBatchSettlementData {
+        l2_chain_id: rng.random(),
+        batch_number: rng.random(),
+        prev_state_root: rng.random(),
+        state_root: rng.random(),
+        l2_to_l1_log_hash: rng.random(),
+        heap_hash: rng.random(),
+        protocol_version: rng.random(),
+        proof_type: if rng.random() {
+            crate::chain::ProofType::Fflonk
+        } else {
+            crate::chain::ProofType::Plonk
+        },
+        proof: gen_random_bytes(rng, 0, 1000),
     }
 }
 

@@ -21,6 +21,7 @@ pub mod genesis;
 pub mod partially_signed_transaction;
 pub mod tokens;
 pub mod transaction;
+pub mod zk;
 
 mod coin_unit;
 mod currency;
@@ -50,3 +51,4 @@ pub use pos::{
 };
 pub use pow::{PoWChainConfig, PoWChainConfigBuilder};
 pub use upgrades::*;
+pub use zk::{ProofType, ZkBatchSettlementData, ZkVerificationKey};

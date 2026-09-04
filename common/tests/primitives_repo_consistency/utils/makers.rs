@@ -428,6 +428,29 @@ pub fn make_random_tx_output_for_tag(rng: &mut impl CryptoRng, tag: TxOutputTag)
             Box::new(make_random_htlc(rng)),
         ),
         TxOutputTag::CreateOrder => TxOutput::CreateOrder(Box::new(make_random_order_data(rng))),
+        TxOutputTag::ZkBatchSettlement => {
+            TxOutput::ZkBatchSettlement(make_random_zk_batch_settlement_data(rng))
+        }
+    }
+}
+
+pub fn make_random_zk_batch_settlement_data(
+    rng: &mut impl CryptoRng,
+) -> common::chain::zk::ZkBatchSettlementData {
+    common::chain::zk::ZkBatchSettlementData {
+        l2_chain_id: rng.random(),
+        batch_number: rng.random(),
+        prev_state_root: rng.random(),
+        state_root: rng.random(),
+        l2_to_l1_log_hash: rng.random(),
+        heap_hash: rng.random(),
+        protocol_version: rng.random(),
+        proof_type: if rng.random() {
+            common::chain::zk::ProofType::Fflonk
+        } else {
+            common::chain::zk::ProofType::Plonk
+        },
+        proof: make_random_bytes(rng),
     }
 }
 

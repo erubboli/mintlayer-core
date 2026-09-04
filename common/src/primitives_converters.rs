@@ -44,6 +44,8 @@ use unwrap_infallible::UnwrapInfallible;
 pub enum PrimitivesConvertersError {
     #[error("Tokens V0 are not supported")]
     UnsupportedTokenV0,
+    #[error("ZkBatchSettlement outputs are not supported by this converter")]
+    UnsupportedZkBatchSettlement,
 }
 
 // Custom "TryFrom" trait to work around the Rust's orphan rule.
@@ -416,6 +418,9 @@ impl TryConvertFrom<TxOutput> for ml_primitives::TxOutput {
                 (*lock).try_convert_into()?,
             )),
             TxOutput::CreateOrder(data) => Ok(Self::CreateOrder((*data).try_convert_into()?)),
+            TxOutput::ZkBatchSettlement(_) => {
+                Err(PrimitivesConvertersError::UnsupportedZkBatchSettlement)
+            }
             TxOutput::CreateStakePool(pool_id, data) => Ok(Self::CreateStakePool(
                 pool_id.try_convert_into()?,
                 (*data).try_convert_into()?,

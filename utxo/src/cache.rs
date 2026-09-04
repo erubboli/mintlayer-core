@@ -515,7 +515,8 @@ fn should_include_in_utxo_set(output: &TxOutput) -> bool {
         | TxOutput::Burn(..)
         | TxOutput::IssueFungibleToken(..)
         | TxOutput::DataDeposit(..)
-        | TxOutput::CreateOrder(..) => false,
+        | TxOutput::CreateOrder(..)
+        | TxOutput::ZkBatchSettlement(_) => false,
     }
 }
 

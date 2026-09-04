@@ -167,7 +167,8 @@ impl ConstrainedValueAccumulator {
             | TxOutput::IssueFungibleToken(..)
             | TxOutput::Burn(..)
             | TxOutput::DataDeposit(..)
-            | TxOutput::CreateOrder(..) => {
+            | TxOutput::CreateOrder(..)
+            | TxOutput::ZkBatchSettlement(_) => {
                 return Err(Error::SpendingNonSpendableOutput(outpoint.clone()));
             }
             TxOutput::IssueNft(token_id, _, _) => {
@@ -469,6 +470,9 @@ impl ConstrainedValueAccumulator {
                 )?,
                 TxOutput::ProduceBlockFromStake(_, _) | TxOutput::CreateDelegationId(_, _) => {
                     /* do nothing as these outputs cannot produce values */
+                }
+                TxOutput::ZkBatchSettlement(_) => {
+                    /* do nothing as this output carries no value (fee model TBD, see plan) */
                 }
                 TxOutput::LockThenTransfer(value, _, timelock) => match value {
                     OutputValue::Coin(coins) => {

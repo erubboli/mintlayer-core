@@ -555,6 +555,10 @@ Returns:
                                 },
                             },
                 },
+            }
+        13) {
+                "type": "ZkBatchSettlement",
+                "content": { "data": object },
             },
 }, .. ]
 ```
@@ -927,6 +931,10 @@ Returns:
                                 },
                             },
                 },
+            }
+        13) {
+                "type": "ZkBatchSettlement",
+                "content": { "data": object },
             },
 }, .. ]
 ```

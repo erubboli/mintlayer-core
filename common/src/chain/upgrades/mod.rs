@@ -24,7 +24,7 @@ pub use chainstate_upgrade::{
     FrozenTokensValidationVersion, HtlcActivated, OrdersActivated, OrdersVersion,
     PoolIdMismatchInKernelUtxoAndPoSDataForbidden, RewardDistributionVersion,
     SighashInputCommitmentVersion, StakerDestinationUpdateForbidden, TokenIdGenerationVersion,
-    TokenIssuanceVersion, TokensFeeVersion, ZeroTokenTransferForbidden,
+    TokenIssuanceVersion, TokensFeeVersion, ZeroTokenTransferForbidden, ZkSettlementActivated,
 };
 pub use chainstate_upgrades_builder::ChainstateUpgradesBuilder;
 pub use consensus_upgrade::{ConsensusUpgrade, PoSStatus, PoWStatus, RequiredConsensus};

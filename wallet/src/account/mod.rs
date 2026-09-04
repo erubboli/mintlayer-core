@@ -1243,7 +1243,8 @@ impl<K: AccountKeyChains> Account<K> {
             | TxOutput::DelegateStaking(_, _)
             | TxOutput::IssueFungibleToken(_)
             | TxOutput::DataDeposit(_)
-            | TxOutput::CreateOrder(_) => {
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => {
                 return Err(WalletError::UnsupportedUtxoType((&utxo).into()));
             }
         };
@@ -1391,7 +1392,8 @@ impl<K: AccountKeyChains> Account<K> {
                 | TxOutput::IssueFungibleToken(_)
                 | TxOutput::DataDeposit(_)
                 | TxOutput::Htlc(_, _)
-                | TxOutput::CreateOrder(_) => None,
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => None,
                 TxOutput::IssueNft(token_id, _, _) => {
                     (*token_id == dummy_token_id).then_some(token_id)
                 }
@@ -1723,6 +1725,7 @@ impl<K: AccountKeyChains> Account<K> {
                 | TxOutput::IssueNft(_, _, _)
                 | TxOutput::DataDeposit(_)
                 | TxOutput::Htlc(_, _)
+                | TxOutput::ZkBatchSettlement(_)
                 | TxOutput::CreateOrder(_) => None,
             })
             .expect("find output with dummy_pool_id");
@@ -1970,7 +1973,9 @@ impl<K: AccountKeyChains> Account<K> {
             TxOutput::CreateOrder(data) => {
                 vec![data.conclude_key().clone()]
             }
-            TxOutput::Burn(_) | TxOutput::DataDeposit(_) => Vec::new(),
+            TxOutput::Burn(_) | TxOutput::DataDeposit(_) | TxOutput::ZkBatchSettlement(_) => {
+                Vec::new()
+            }
         }
     }
 
@@ -2761,7 +2766,8 @@ fn group_preselected_inputs(
                 | TxOutput::IssueFungibleToken(_)
                 | TxOutput::IssueNft(_, _, _)
                 | TxOutput::DataDeposit(_)
-                | TxOutput::CreateOrder(_) => None,
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => None,
             }
         } else {
             None
@@ -2837,7 +2843,8 @@ fn group_preselected_inputs(
                     | TxOutput::DelegateStaking(_, _)
                     | TxOutput::IssueFungibleToken(_)
                     | TxOutput::DataDeposit(_)
-                    | TxOutput::CreateOrder(_) => {
+                    | TxOutput::CreateOrder(_)
+                    | TxOutput::ZkBatchSettlement(_) => {
                         return Err(WalletError::UnsupportedTransactionOutput(Box::new(
                             output.clone(),
                         )));

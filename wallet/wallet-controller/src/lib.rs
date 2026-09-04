@@ -1012,7 +1012,8 @@ where
             | TxOutput::IssueNft(_, _, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => None,
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => None,
         });
         let mut balances = BTreeMap::new();
         for pool_id in pool_ids {

@@ -393,6 +393,10 @@ impl BanScore for CheckTransactionError {
             CheckTransactionError::ChangeTokenMetadataUriNotActivated => 100,
             CheckTransactionError::OrdersV1AreNotActivated(_) => 100,
             CheckTransactionError::DeprecatedOrdersCommands(_) => 100,
+            CheckTransactionError::ZkSettlementNotActivated(_) => 100,
+            CheckTransactionError::MultipleZkBatchSettlementsInTransaction(_) => 100,
+            CheckTransactionError::ZkProofMaxSizeExceeded(_, _, _) => 100,
+            CheckTransactionError::ZkUnknownProtocolVersion(_, _) => 100,
         }
     }
 }
@@ -606,6 +610,7 @@ impl BanScore for IOPolicyError {
             IOPolicyError::ProduceBlockInTx => 100,
             IOPolicyError::MultipleAccountCommands => 100,
             IOPolicyError::AttemptToUseAccountInputInReward => 100,
+            IOPolicyError::MultipleZkBatchSettlementsInTransaction => 100,
         }
     }
 }

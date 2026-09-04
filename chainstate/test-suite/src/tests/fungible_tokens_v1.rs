@@ -7871,7 +7871,8 @@ pub fn make_zero_transfer_outputs_for_token_zero_amount_transfer_test(
             | TxOutputTag::IssueFungibleToken
             | TxOutputTag::IssueNft
             | TxOutputTag::DataDeposit
-            | TxOutputTag::CreateOrder => None,
+            | TxOutputTag::CreateOrder
+            | TxOutputTag::ZkBatchSettlement => None,
         })
         .collect()
 }

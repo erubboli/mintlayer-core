@@ -21,6 +21,7 @@ pub mod regtest;
 pub mod regtest_options;
 
 use std::{
+    collections::BTreeMap,
     fmt::{Debug, Display},
     net::SocketAddr,
     num::NonZeroU64,
@@ -43,8 +44,11 @@ use utils::const_nz_u64;
 
 use crate::{
     chain::{
-        GenBlock, Genesis, PoWChainConfig, TxOutput, block::timestamp::BlockTimestamp,
-        transaction::Destination, upgrades::NetUpgrades,
+        GenBlock, Genesis, PoWChainConfig, TxOutput,
+        block::timestamp::BlockTimestamp,
+        transaction::Destination,
+        upgrades::NetUpgrades,
+        zk::{ProofType, ZkVerificationKey},
     },
     primitives::{
         Amount, BlockCount, BlockDistance, BlockHeight, H256,
@@ -60,8 +64,8 @@ use super::{
     DestinationTag, FrozenTokensValidationVersion, HtlcActivated, OrdersActivated, OrdersVersion,
     PoolIdMismatchInKernelUtxoAndPoSDataForbidden, RequiredConsensus, RewardDistributionVersion,
     SighashInputCommitmentVersion, StakerDestinationUpdateForbidden, TokenIdGenerationVersion,
-    TokenIssuanceVersion, TokensFeeVersion, ZeroTokenTransferForbidden, output_value::OutputValue,
-    stakelock::StakePoolData,
+    TokenIssuanceVersion, TokensFeeVersion, ZeroTokenTransferForbidden, ZkSettlementActivated,
+    output_value::OutputValue, stakelock::StakePoolData,
 };
 
 use self::emission_schedule::{CoinUnit, DEFAULT_INITIAL_MINT};
@@ -295,6 +299,8 @@ pub struct ChainConfig {
     sealed_epoch_distance_from_tip: usize,
     initial_randomness: H256,
     data_deposit_max_size: Option<usize>,
+    zk_batch_settlement_max_proof_size: Option<usize>,
+    zk_verification_keys: BTreeMap<(u32, ProofType), ZkVerificationKey>,
     token_max_uri_len: usize,
     token_max_dec_count: u8,
     token_max_name_len: usize,
@@ -602,6 +608,36 @@ impl ChainConfig {
         }
     }
 
+    /// The maximum allowed size of the proof in a ZkBatchSettlement output, in bytes
+    pub fn zk_batch_settlement_max_proof_size(&self) -> usize {
+        self.zk_batch_settlement_max_proof_size
+            .unwrap_or(ZK_BATCH_SETTLEMENT_MAX_PROOF_SIZE)
+    }
+
+    /// Whether ZKThunder L2 batch settlement is activated at the given height
+    pub fn zk_settlement_activated(&self, height: BlockHeight) -> bool {
+        self.chainstate_upgrades.version_at_height(height).1.zk_settlement_activated()
+            == ZkSettlementActivated::Yes
+    }
+
+    /// The ZKThunder verification key for the given protocol version and proof type.
+    ///
+    /// Returns `None` if the combination is not recognized; such transactions must be
+    /// rejected. Verification keys are consensus constants registered in the chain
+    /// config; they are never taken from transaction data.
+    pub fn zk_vk_for_protocol_version(
+        &self,
+        protocol_version: u32,
+        proof_type: ProofType,
+    ) -> Option<&ZkVerificationKey> {
+        self.zk_verification_keys.get(&(protocol_version, proof_type))
+    }
+
+    /// All registered ZKThunder verification keys, keyed by (protocol version, proof type)
+    pub fn zk_verification_keys(&self) -> &BTreeMap<(u32, ProofType), ZkVerificationKey> {
+        &self.zk_verification_keys
+    }
+
     /// The fee for issuing a fungible token
     pub fn fungible_token_issuance_fee(&self) -> Amount {
         FUNGIBLE_TOKEN_ISSUANCE_FEE
@@ -765,6 +801,10 @@ const TOKEN_CHANGE_METADATA_URI_FEE: Amount = CoinUnit::from_coins(20).to_amount
 
 const DATA_DEPOSIT_MAX_SIZE_V0: usize = 128;
 const DATA_DEPOSIT_MAX_SIZE_V1: usize = 384;
+
+/// Maximum size of the `proof` field of a ZkBatchSettlement output, in bytes.
+/// 200 KB covers an Fflonk proof (~120-180 KB CBOR-serialized) with margin.
+const ZK_BATCH_SETTLEMENT_MAX_PROOF_SIZE: usize = 200_000;
 const DATA_DEPOSIT_FEE_V0: Amount = CoinUnit::from_coins(100).to_amount_atoms();
 const DATA_DEPOSIT_FEE_V1: Amount = CoinUnit::from_coins(20).to_amount_atoms();
 
@@ -920,6 +960,7 @@ pub fn create_unit_test_config_builder() -> Builder {
                     FrozenTokensValidationVersion::V1,
                     HtlcActivated::Yes,
                     OrdersActivated::Yes,
+                    ZkSettlementActivated::Yes,
                     OrdersVersion::V1,
                     StakerDestinationUpdateForbidden::Yes,
                     TokenIdGenerationVersion::V1,

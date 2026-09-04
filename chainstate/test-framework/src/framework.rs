@@ -698,6 +698,7 @@ impl TestFramework {
                 | TxOutput::IssueNft(_, _, _)
                 | TxOutput::DataDeposit(_)
                 | TxOutput::Htlc(_, _)
+                | TxOutput::ZkBatchSettlement(_)
                 | TxOutput::CreateOrder(_) => None,
             });
 

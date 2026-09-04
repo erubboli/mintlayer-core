@@ -839,6 +839,7 @@ fn check_mutate_output(
             TxOutput::DataDeposit(_) => unreachable!(),
             TxOutput::Htlc(_, _) => unreachable!(),
             TxOutput::CreateOrder(_) => unreachable!(),
+            TxOutput::ZkBatchSettlement(_) => unreachable!(),
         };
 
     let tx = tx_updater.generate_tx().unwrap();

@@ -53,6 +53,14 @@ pub enum OrdersActivated {
     No,
 }
 
+/// Whether ZKThunder L2 batch settlement outputs (`TxOutput::ZkBatchSettlement`)
+/// are accepted by consensus.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+pub enum ZkSettlementActivated {
+    Yes,
+    No,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub enum DataDepositFeeVersion {
     V0,
@@ -162,6 +170,7 @@ pub struct ChainstateUpgrade {
     frozen_tokens_validation_version: FrozenTokensValidationVersion,
     htlc_activated: HtlcActivated,
     orders_activated: OrdersActivated,
+    zk_settlement_activated: ZkSettlementActivated,
     orders_version: OrdersVersion,
     staker_destination_update_forbidden: StakerDestinationUpdateForbidden,
     token_id_generation_version: TokenIdGenerationVersion,
@@ -183,6 +192,7 @@ impl ChainstateUpgrade {
         frozen_tokens_validation_version: FrozenTokensValidationVersion,
         htlc_activated: HtlcActivated,
         orders_activated: OrdersActivated,
+        zk_settlement_activated: ZkSettlementActivated,
         orders_version: OrdersVersion,
         staker_destination_update_forbidden: StakerDestinationUpdateForbidden,
         token_id_generation_version: TokenIdGenerationVersion,
@@ -201,6 +211,7 @@ impl ChainstateUpgrade {
             frozen_tokens_validation_version,
             htlc_activated,
             orders_activated,
+            zk_settlement_activated,
             orders_version,
             staker_destination_update_forbidden,
             token_id_generation_version,
@@ -229,6 +240,10 @@ impl ChainstateUpgrade {
 
     pub fn orders_activated(&self) -> OrdersActivated {
         self.orders_activated
+    }
+
+    pub fn zk_settlement_activated(&self) -> ZkSettlementActivated {
+        self.zk_settlement_activated
     }
 
     pub fn staker_destination_update_forbidden(&self) -> StakerDestinationUpdateForbidden {

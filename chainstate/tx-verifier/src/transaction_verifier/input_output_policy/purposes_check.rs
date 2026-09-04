@@ -71,7 +71,8 @@ pub fn check_reward_inputs_outputs_purposes(
                     | TxOutput::IssueNft(..)
                     | TxOutput::DataDeposit(..)
                     | TxOutput::Htlc(..)
-                    | TxOutput::CreateOrder(..) => {
+                    | TxOutput::CreateOrder(..)
+                    | TxOutput::ZkBatchSettlement(..) => {
                         return Err(ConnectTransactionError::IOPolicyError(
                             IOPolicyError::InvalidInputTypeInReward,
                             block_id.into(),
@@ -112,7 +113,8 @@ pub fn check_reward_inputs_outputs_purposes(
                     | TxOutput::IssueNft(..)
                     | TxOutput::DataDeposit(..)
                     | TxOutput::Htlc(..)
-                    | TxOutput::CreateOrder(..) => {
+                    | TxOutput::CreateOrder(..)
+                    | TxOutput::ZkBatchSettlement(..) => {
                         return Err(ConnectTransactionError::IOPolicyError(
                             IOPolicyError::InvalidOutputTypeInReward,
                             block_id.into(),
@@ -174,7 +176,8 @@ pub fn check_reward_inputs_outputs_purposes(
                     | TxOutput::IssueNft(..)
                     | TxOutput::DataDeposit(..)
                     | TxOutput::Htlc(..)
-                    | TxOutput::CreateOrder(..) => false,
+                    | TxOutput::CreateOrder(..)
+                    | TxOutput::ZkBatchSettlement(..) => false,
                 });
             ensure!(
                 all_lock_then_transfer,
@@ -207,7 +210,8 @@ pub fn check_tx_inputs_outputs_purposes(
         | TxOutput::DelegateStaking(..)
         | TxOutput::IssueFungibleToken(..)
         | TxOutput::DataDeposit(..)
-        | TxOutput::CreateOrder(..) => false,
+        | TxOutput::CreateOrder(..)
+        | TxOutput::ZkBatchSettlement(..) => false,
     });
     ensure!(are_inputs_valid, IOPolicyError::InvalidInputTypeInTx);
 
@@ -231,6 +235,7 @@ pub fn check_tx_inputs_outputs_purposes(
     let mut stake_pool_outputs_count = 0;
     let mut create_delegation_output_count = 0;
     let mut create_order_output_count = 0;
+    let mut zk_batch_settlement_output_count = 0;
 
     tx.outputs().iter().for_each(|output| match output {
         TxOutput::Transfer(..)
@@ -253,6 +258,9 @@ pub fn check_tx_inputs_outputs_purposes(
         TxOutput::CreateOrder(..) => {
             create_order_output_count += 1;
         }
+        TxOutput::ZkBatchSettlement(..) => {
+            zk_batch_settlement_output_count += 1;
+        }
     });
 
     ensure!(
@@ -270,6 +278,10 @@ pub fn check_tx_inputs_outputs_purposes(
     ensure!(
         create_order_output_count <= 1,
         IOPolicyError::MultipleOrdersCreated
+    );
+    ensure!(
+        zk_batch_settlement_output_count <= 1,
+        IOPolicyError::MultipleZkBatchSettlementsInTransaction
     );
 
     Ok(())

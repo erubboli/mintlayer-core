@@ -49,6 +49,7 @@ fn update_functions_below_if_new_outputs_were_added(output: TxOutput) {
         TxOutput::DataDeposit(_) => unimplemented!(),
         TxOutput::Htlc(_, _) => unimplemented!(),
         TxOutput::CreateOrder(_) => unimplemented!(),
+        TxOutput::ZkBatchSettlement(_) => unimplemented!(),
     }
 }
 
@@ -277,7 +278,8 @@ pub fn is_stake_pool(output: &TxOutput) -> bool {
         | TxOutput::IssueNft(..)
         | TxOutput::DataDeposit(..)
         | TxOutput::Htlc(..)
-        | TxOutput::CreateOrder(..) => false,
+        | TxOutput::CreateOrder(..)
+        | TxOutput::ZkBatchSettlement(..) => false,
         TxOutput::CreateStakePool(..) => true,
     }
 }
@@ -294,7 +296,8 @@ pub fn is_produce_block(output: &TxOutput) -> bool {
         | TxOutput::IssueNft(..)
         | TxOutput::DataDeposit(..)
         | TxOutput::Htlc(..)
-        | TxOutput::CreateOrder(..) => false,
+        | TxOutput::CreateOrder(..)
+        | TxOutput::ZkBatchSettlement(..) => false,
         TxOutput::ProduceBlockFromStake(..) => true,
     }
 }

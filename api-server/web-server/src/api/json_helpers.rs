@@ -253,6 +253,20 @@ fn opt_spent_utxo_to_json(
                 "give_value": outputvalue_to_json(data.give(), chain_config, token_decimals),
             })
         }
+        TxOutput::ZkBatchSettlement(data) => {
+            json!({
+                "type": "ZkBatchSettlement",
+                "l2_chain_id": data.l2_chain_id,
+                "batch_number": data.batch_number,
+                "prev_state_root": format!("0x{}", hex::encode(data.prev_state_root)),
+                "state_root": format!("0x{}", hex::encode(data.state_root)),
+                "l2_to_l1_log_hash": format!("0x{}", hex::encode(data.l2_to_l1_log_hash)),
+                "heap_hash": format!("0x{}", hex::encode(data.heap_hash)),
+                "protocol_version": data.protocol_version,
+                "proof_type": format!("{:?}", data.proof_type),
+                "proof_size": data.proof.len(),
+            })
+        }
     }
 }
 

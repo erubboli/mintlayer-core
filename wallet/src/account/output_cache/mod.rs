@@ -677,7 +677,8 @@ impl OutputCache {
             | TxOutput::CreateDelegationId(_, _)
             | TxOutput::IssueFungibleToken(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => false,
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => false,
         }
     }
 
@@ -1122,7 +1123,8 @@ impl OutputCache {
                 | TxOutput::DataDeposit(_)
                 | TxOutput::Transfer(_, _)
                 | TxOutput::LockThenTransfer(_, _, _)
-                | TxOutput::Htlc(_, _) => {}
+                | TxOutput::Htlc(_, _)
+                | TxOutput::ZkBatchSettlement(_) => {}
                 TxOutput::IssueFungibleToken(issuance) => {
                     if already_present {
                         continue;
@@ -1777,7 +1779,8 @@ impl OutputCache {
                 | TxOutput::DataDeposit(_)
                 | TxOutput::DelegateStaking(_, _)
                 | TxOutput::LockThenTransfer(_, _, _)
-                | TxOutput::Htlc(_, _) => {}
+                | TxOutput::Htlc(_, _)
+                | TxOutput::ZkBatchSettlement(_) => {}
             }
         }
 
@@ -1894,7 +1897,8 @@ impl OutputCache {
                     | TxOutput::Transfer(_, _)
                     | TxOutput::LockThenTransfer(_, _, _)
                     | TxOutput::Htlc(_, _)
-                    | TxOutput::CreateOrder(_) => None,
+                    | TxOutput::CreateOrder(_)
+                    | TxOutput::ZkBatchSettlement(_) => None,
                     TxOutput::ProduceBlockFromStake(_, pool_id)
                     | TxOutput::CreateStakePool(pool_id, _) => {
                         self.pools.get(pool_id).and_then(|pool_data| {
@@ -1938,6 +1942,7 @@ fn is_v0_token_output(output: &TxOutput) -> bool {
         | TxOutput::IssueFungibleToken(_)
         | TxOutput::DataDeposit(_)
         | TxOutput::ProduceBlockFromStake(_, _)
+        | TxOutput::ZkBatchSettlement(_)
         | TxOutput::CreateOrder(_) => false,
     }
 }

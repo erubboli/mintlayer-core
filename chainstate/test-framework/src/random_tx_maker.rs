@@ -342,7 +342,8 @@ impl<'a> RandomTxMaker<'a> {
             | TxOutput::IssueNft(_, _, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => { /* do nothing */ }
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => { /* do nothing */ }
             TxOutput::CreateStakePool(pool_id, _) => {
                 let (staker_sk, vrf_sk) = new_staking_pools.get(pool_id).unwrap();
                 staking_pools_observer.on_pool_created(
@@ -388,7 +389,8 @@ impl<'a> RandomTxMaker<'a> {
                     | TxOutput::IssueFungibleToken(_)
                     | TxOutput::IssueNft(_, _, _)
                     | TxOutput::DataDeposit(_)
-                    | TxOutput::CreateOrder(_) => true,
+                    | TxOutput::CreateOrder(_)
+                    | TxOutput::ZkBatchSettlement(_) => true,
                 }
                 .then_some((input, input_utxo))
             })
@@ -874,7 +876,8 @@ impl<'a> RandomTxMaker<'a> {
                 | TxOutput::DelegateStaking(_, _)
                 | TxOutput::IssueFungibleToken(_)
                 | TxOutput::DataDeposit(_)
-                | TxOutput::CreateOrder(_) => unreachable!(),
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => unreachable!(),
             };
 
             result_inputs.extend(new_inputs);
@@ -1362,7 +1365,8 @@ impl<'a> RandomTxMaker<'a> {
                 | TxOutput::ProduceBlockFromStake(_, _)
                 | TxOutput::DelegateStaking(_, _)
                 | TxOutput::DataDeposit(_)
-                | TxOutput::Htlc(_, _) => Some(output),
+                | TxOutput::Htlc(_, _)
+                | TxOutput::ZkBatchSettlement(_) => Some(output),
                 TxOutput::CreateStakePool(dummy_pool_id, pool_data) => {
                     let pool_id = make_pool_id(inputs).unwrap();
                     let (vrf_sk, vrf_pk) = VRFPrivateKey::new_from_rng(rng, VRFKeyKind::Schnorrkel);

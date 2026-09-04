@@ -177,7 +177,8 @@ where
         | TxOutput::IssueNft(_, _, _)
         | TxOutput::DataDeposit(_)
         | TxOutput::Htlc(_, _)
-        | TxOutput::CreateOrder(_) => {
+        | TxOutput::CreateOrder(_)
+        | TxOutput::ZkBatchSettlement(_) => {
             return Err(EpochSealError::SpendStakeError(
                 SpendStakeError::InvalidBlockRewardOutputType,
             ));

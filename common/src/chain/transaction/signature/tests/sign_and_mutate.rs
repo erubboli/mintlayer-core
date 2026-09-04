@@ -1042,6 +1042,7 @@ fn mutate_first_output(
         TxOutput::DataDeposit(_) => unreachable!(),
         TxOutput::Htlc(_, _) => unreachable!(),
         TxOutput::CreateOrder(_) => unreachable!(),
+        TxOutput::ZkBatchSettlement(_) => unreachable!(),
     };
     SignedTransactionWithInputCommitments {
         tx: updater.generate_tx().unwrap(),

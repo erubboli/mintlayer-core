@@ -1469,6 +1469,9 @@ fn to_trezor_output_msg(
             out.create_order = Some(out_req).into();
             out
         }
+        TxOutput::ZkBatchSettlement(_) => {
+            return Err(SignerError::UnsupportedZkBatchSettlement);
+        }
     };
     Ok(res)
 }

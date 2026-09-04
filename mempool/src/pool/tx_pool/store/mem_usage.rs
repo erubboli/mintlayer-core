@@ -396,6 +396,7 @@ impl MemoryUsage for TxOutput {
             TxOutput::DataDeposit(v) => v.indirect_memory_usage(),
             TxOutput::Htlc(_, htlc) => htlc.indirect_memory_usage(),
             TxOutput::CreateOrder(_) => 0,
+            TxOutput::ZkBatchSettlement(data) => data.proof.indirect_memory_usage(),
         }
     }
 }

@@ -828,7 +828,11 @@ impl BlockProcessingErrorClassification for CheckTransactionError {
             | CheckTransactionError::ChangeTokenMetadataUriNotActivated
             | CheckTransactionError::OrdersV1AreNotActivated(_)
             | CheckTransactionError::DeprecatedOrdersCommands(_)
-            | CheckTransactionError::OrdersCurrenciesMustBeDifferent(_) => {
+            | CheckTransactionError::OrdersCurrenciesMustBeDifferent(_)
+            | CheckTransactionError::ZkSettlementNotActivated(_)
+            | CheckTransactionError::MultipleZkBatchSettlementsInTransaction(_)
+            | CheckTransactionError::ZkProofMaxSizeExceeded(_, _, _)
+            | CheckTransactionError::ZkUnknownProtocolVersion(_, _) => {
                 BlockProcessingErrorClass::BadBlock
             }
             CheckTransactionError::PropertyQueryError(err) => err.classify(),

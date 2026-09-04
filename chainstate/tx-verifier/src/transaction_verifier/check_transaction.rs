@@ -73,6 +73,14 @@ pub enum CheckTransactionError {
     ChangeTokenMetadataUriNotActivated,
     #[error("Cannot fill order {0} with zero amount in tx {1}")]
     AttemptToFillOrderWithZero(OrderId, Id<Transaction>),
+    #[error("ZK batch settlement outputs are not yet activated (tx {0})")]
+    ZkSettlementNotActivated(Id<Transaction>),
+    #[error("More than one ZkBatchSettlement output in tx {0}")]
+    MultipleZkBatchSettlementsInTransaction(Id<Transaction>),
+    #[error("ZK proof size {0} exceeded max allowed {1} in tx {2}")]
+    ZkProofMaxSizeExceeded(usize, usize, Id<Transaction>),
+    #[error("Unknown ZKThunder protocol version {0} in tx {1}")]
+    ZkUnknownProtocolVersion(u32, Id<Transaction>),
 }
 
 pub fn check_transaction(
@@ -88,6 +96,7 @@ pub fn check_transaction(
     check_data_deposit_outputs(chain_config, block_height, tx)?;
     check_htlc_outputs(chain_config, block_height, tx)?;
     check_order_inputs_outputs(chain_config, block_height, tx)?;
+    check_zk_batch_settlement_outputs(chain_config, block_height, tx)?;
     Ok(())
 }
 
@@ -187,7 +196,8 @@ fn check_tokens_tx(
                 | TxOutput::DelegateStaking(_, _)
                 | TxOutput::IssueFungibleToken(_)
                 | TxOutput::IssueNft(_, _, _)
-                | TxOutput::DataDeposit(_) => false,
+                | TxOutput::DataDeposit(_)
+                | TxOutput::ZkBatchSettlement(_) => false,
             });
             ensure!(
                 !has_tokens_v0_op,
@@ -275,7 +285,8 @@ fn check_tokens_tx(
             | TxOutput::DelegateStaking(_, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => Ok(()),
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => Ok(()),
         })
         .map_err(CheckTransactionError::TokensError)?;
 
@@ -341,6 +352,49 @@ fn check_data_deposit_outputs(
                     ));
                 }
             }
+            // Note: ZkBatchSettlement outputs are checked in `check_zk_batch_settlement_outputs`
+            TxOutput::ZkBatchSettlement(_) => {}
+        }
+    }
+
+    Ok(())
+}
+
+fn check_zk_batch_settlement_outputs(
+    chain_config: &ChainConfig,
+    block_height: BlockHeight,
+    tx: &SignedTransaction,
+) -> Result<(), CheckTransactionError> {
+    let zk_settlement_activated = chain_config.zk_settlement_activated(block_height);
+    let max_proof_size = chain_config.zk_batch_settlement_max_proof_size();
+
+    for output in tx.outputs() {
+        if let TxOutput::ZkBatchSettlement(data) = output {
+            // Fail fast before any cryptographic work
+            ensure!(
+                zk_settlement_activated,
+                CheckTransactionError::ZkSettlementNotActivated(tx.transaction().get_id())
+            );
+            ensure!(
+                data.proof.len() <= max_proof_size,
+                CheckTransactionError::ZkProofMaxSizeExceeded(
+                    data.proof.len(),
+                    max_proof_size,
+                    tx.transaction().get_id()
+                )
+            );
+            // Exact-match lookup; no fallback to another protocol version (downgrade protection)
+            ensure!(
+                chain_config
+                    .zk_vk_for_protocol_version(data.protocol_version, data.proof_type)
+                    .is_some(),
+                CheckTransactionError::ZkUnknownProtocolVersion(
+                    data.protocol_version,
+                    tx.transaction().get_id()
+                )
+            );
+            // Note: actual proof verification happens in the stateful part of the verifier,
+            // where the settlement is bound to the on-chain batch sequence.
         }
     }
 
@@ -372,7 +426,8 @@ fn check_htlc_outputs(
                 | TxOutput::IssueFungibleToken(_)
                 | TxOutput::IssueNft(_, _, _)
                 | TxOutput::DataDeposit(_)
-                | TxOutput::CreateOrder(_) => false,
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => false,
                 TxOutput::Htlc(_, _) => true,
             });
 
@@ -455,7 +510,8 @@ fn check_order_inputs_outputs(
             | TxOutput::IssueFungibleToken(..)
             | TxOutput::IssueNft(..)
             | TxOutput::DataDeposit(..)
-            | TxOutput::Htlc(..) => { /* Do nothing */ }
+            | TxOutput::Htlc(..)
+            | TxOutput::ZkBatchSettlement(..) => { /* Do nothing */ }
             TxOutput::CreateOrder(data) => {
                 let orders_activated = chain_config
                     .chainstate_upgrades()

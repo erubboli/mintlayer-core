@@ -15,6 +15,7 @@
 
 use std::{collections::BTreeMap, net::SocketAddr, num::NonZeroU64, sync::Arc, time::Duration};
 
+use crate::chain::zk::{ProofType, ZkVerificationKey};
 use crate::{
     Uint256,
     chain::{
@@ -25,7 +26,7 @@ use crate::{
         PoSConsensusVersion, PoWChainConfig, PoolIdMismatchInKernelUtxoAndPoSDataForbidden,
         RewardDistributionVersion, SighashInputCommitmentVersion, StakerDestinationUpdateForbidden,
         TokenIdGenerationVersion, TokenIssuanceVersion, TokensFeeVersion,
-        ZeroTokenTransferForbidden,
+        ZeroTokenTransferForbidden, ZkSettlementActivated,
         config::{
             ChainConfig, ChainType, EmissionScheduleTabular, create_mainnet_genesis,
             create_testnet_genesis, create_unit_test_genesis, emission_schedule,
@@ -226,6 +227,7 @@ impl ChainType {
                 FrozenTokensValidationVersion::V0,
                 HtlcActivated::No,
                 OrdersActivated::No,
+                ZkSettlementActivated::No,
                 OrdersVersion::V0,
                 StakerDestinationUpdateForbidden::No,
                 TokenIdGenerationVersion::V0,
@@ -276,6 +278,7 @@ impl ChainType {
                 FrozenTokensValidationVersion::V0,
                 HtlcActivated::No,
                 OrdersActivated::No,
+                ZkSettlementActivated::No,
                 OrdersVersion::V0,
                 StakerDestinationUpdateForbidden::No,
                 TokenIdGenerationVersion::V0,
@@ -338,6 +341,7 @@ pub fn default_regtest_chainstate_upgrade_at_genesis() -> ChainstateUpgrade {
         FrozenTokensValidationVersion::V1,
         HtlcActivated::Yes,
         OrdersActivated::Yes,
+        ZkSettlementActivated::Yes,
         OrdersVersion::V1,
         StakerDestinationUpdateForbidden::Yes,
         TokenIdGenerationVersion::V1,
@@ -400,6 +404,8 @@ pub struct Builder {
     genesis_block: GenesisBlockInit,
     emission_schedule: EmissionScheduleInit,
     data_deposit_max_size: Option<usize>,
+    zk_batch_settlement_max_proof_size: Option<usize>,
+    zk_verification_keys: BTreeMap<(u32, ProofType), ZkVerificationKey>,
     token_max_uri_len: usize,
     token_max_dec_count: u8,
     token_max_name_len: usize,
@@ -448,6 +454,8 @@ impl Builder {
             consensus_upgrades,
             chainstate_upgrades: chain_type.default_chainstate_upgrades(),
             data_deposit_max_size: None,
+            zk_batch_settlement_max_proof_size: None,
+            zk_verification_keys: BTreeMap::new(),
             token_max_uri_len: super::TOKEN_MAX_URI_LEN,
             token_max_dec_count: super::TOKEN_MAX_DEC_COUNT,
             token_max_name_len: super::TOKEN_MAX_NAME_LEN,
@@ -500,6 +508,8 @@ impl Builder {
             consensus_upgrades,
             chainstate_upgrades,
             data_deposit_max_size,
+            zk_batch_settlement_max_proof_size,
+            zk_verification_keys,
             token_max_uri_len,
             token_max_dec_count,
             token_max_name_len,
@@ -598,6 +608,8 @@ impl Builder {
             consensus_upgrades,
             chainstate_upgrades,
             data_deposit_max_size,
+            zk_batch_settlement_max_proof_size,
+            zk_verification_keys,
             token_max_uri_len,
             token_max_dec_count,
             empty_consensus_reward_maturity_block_count,
@@ -645,6 +657,8 @@ impl Builder {
     builder_method!(epoch_length: NonZeroU64);
     builder_method!(sealed_epoch_distance_from_tip: usize);
     builder_method!(data_deposit_max_size: Option<usize>);
+    builder_method!(zk_batch_settlement_max_proof_size: Option<usize>);
+    builder_method!(zk_verification_keys: BTreeMap<(u32, ProofType), ZkVerificationKey>);
     builder_method!(min_stake_pool_pledge: Amount);
 
     pub fn checkpoints(mut self, checkpoints: BTreeMap<BlockHeight, Id<GenBlock>>) -> Self {
@@ -801,6 +815,7 @@ mod tests {
                             FrozenTokensValidationVersion::V0,
                             HtlcActivated::No,
                             OrdersActivated::No,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V0,
                             StakerDestinationUpdateForbidden::No,
                             TokenIdGenerationVersion::V0,
@@ -821,6 +836,7 @@ mod tests {
                             FrozenTokensValidationVersion::V1,
                             HtlcActivated::Yes,
                             OrdersActivated::Yes,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V0,
                             StakerDestinationUpdateForbidden::No,
                             TokenIdGenerationVersion::V0,
@@ -841,6 +857,7 @@ mod tests {
                             FrozenTokensValidationVersion::V1,
                             HtlcActivated::Yes,
                             OrdersActivated::Yes,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V1,
                             StakerDestinationUpdateForbidden::Yes,
                             TokenIdGenerationVersion::V1,
@@ -861,6 +878,7 @@ mod tests {
                             FrozenTokensValidationVersion::V1,
                             HtlcActivated::Yes,
                             OrdersActivated::Yes,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V1,
                             StakerDestinationUpdateForbidden::Yes,
                             TokenIdGenerationVersion::V1,
@@ -893,6 +911,7 @@ mod tests {
                             FrozenTokensValidationVersion::V0,
                             HtlcActivated::No,
                             OrdersActivated::No,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V0,
                             StakerDestinationUpdateForbidden::No,
                             TokenIdGenerationVersion::V0,
@@ -913,6 +932,7 @@ mod tests {
                             FrozenTokensValidationVersion::V0,
                             HtlcActivated::No,
                             OrdersActivated::No,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V0,
                             StakerDestinationUpdateForbidden::No,
                             TokenIdGenerationVersion::V0,
@@ -933,6 +953,7 @@ mod tests {
                             FrozenTokensValidationVersion::V0,
                             HtlcActivated::No,
                             OrdersActivated::No,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V0,
                             StakerDestinationUpdateForbidden::No,
                             TokenIdGenerationVersion::V0,
@@ -953,6 +974,7 @@ mod tests {
                             FrozenTokensValidationVersion::V0,
                             HtlcActivated::Yes,
                             OrdersActivated::No,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V0,
                             StakerDestinationUpdateForbidden::No,
                             TokenIdGenerationVersion::V0,
@@ -973,6 +995,7 @@ mod tests {
                             FrozenTokensValidationVersion::V1,
                             HtlcActivated::Yes,
                             OrdersActivated::Yes,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V0,
                             StakerDestinationUpdateForbidden::No,
                             TokenIdGenerationVersion::V0,
@@ -993,6 +1016,7 @@ mod tests {
                             FrozenTokensValidationVersion::V1,
                             HtlcActivated::Yes,
                             OrdersActivated::Yes,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V1,
                             StakerDestinationUpdateForbidden::Yes,
                             TokenIdGenerationVersion::V1,
@@ -1013,6 +1037,7 @@ mod tests {
                             FrozenTokensValidationVersion::V1,
                             HtlcActivated::Yes,
                             OrdersActivated::Yes,
+                            ZkSettlementActivated::No,
                             OrdersVersion::V1,
                             StakerDestinationUpdateForbidden::Yes,
                             TokenIdGenerationVersion::V1,

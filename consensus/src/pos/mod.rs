@@ -180,7 +180,8 @@ where
             | TxOutput::IssueNft(_, _, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => {
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => {
                 return Err(ConsensusPoSError::InvalidOutputTypeInStakeKernel(
                     header.get_id(),
                 ));

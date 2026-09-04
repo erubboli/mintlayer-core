@@ -414,7 +414,8 @@ async fn simulation(
                     | TxOutput::DataDeposit(_)
                     | TxOutput::DelegateStaking(_, _)
                     | TxOutput::ProduceBlockFromStake(_, _)
-                    | TxOutput::Htlc(_, _) => {}
+                    | TxOutput::Htlc(_, _)
+                    | TxOutput::ZkBatchSettlement(_) => {}
                     TxOutput::CreateOrder(order_data) => {
                         let order_id = make_order_id(tx.inputs()).unwrap();
                         let _ = new_orders_cache
@@ -614,7 +615,8 @@ fn update_statistics(
         | TxOutput::LockThenTransfer(_, _, _)
         | TxOutput::ProduceBlockFromStake(_, _)
         | TxOutput::Htlc(_, _)
-        | TxOutput::CreateOrder(_) => {}
+        | TxOutput::CreateOrder(_)
+        | TxOutput::ZkBatchSettlement(_) => {}
     });
 
     tx.inputs().iter().for_each(|inp| match inp {

@@ -1271,7 +1271,8 @@ where
                     | TxOutput::Burn(_)
                     | TxOutput::DelegateStaking(_, _)
                     | TxOutput::DataDeposit(_)
-                    | TxOutput::CreateOrder(_) => return false,
+                    | TxOutput::CreateOrder(_)
+                    | TxOutput::ZkBatchSettlement(_) => return false,
                 };
 
                 let src_token_id = match val {

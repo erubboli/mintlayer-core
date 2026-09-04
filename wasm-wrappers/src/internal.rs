@@ -109,7 +109,8 @@ pub fn internal_verify_witness(
             | TxOutput::IssueFungibleToken(_)
             | TxOutput::IssueNft(_, _, _)
             | TxOutput::DataDeposit(_)
-            | TxOutput::CreateOrder(_) => None,
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => None,
         },
         None => None,
     };

@@ -123,6 +123,7 @@ fn own_output(key_chain: &impl AccountKeyChains, output: &TxOutput) -> bool {
         | TxOutput::IssueFungibleToken(_)
         | TxOutput::IssueNft(_, _, _)
         | TxOutput::DataDeposit(_)
+        | TxOutput::ZkBatchSettlement(_)
         | TxOutput::Htlc(_, _)
         | TxOutput::CreateOrder(_) => false,
     }

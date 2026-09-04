@@ -336,7 +336,8 @@ where
             | TxOutput::IssueNft(_, _, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => Ok(None),
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => Ok(None),
         }
     }
 
@@ -450,7 +451,8 @@ where
                 | TxOutput::IssueNft(_, _, _)
                 | TxOutput::DataDeposit(_)
                 | TxOutput::Htlc(_, _)
-                | TxOutput::CreateOrder(_) => None,
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => None,
             })
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -641,7 +643,8 @@ where
                 | TxOutput::IssueNft(_, _, _)
                 | TxOutput::DataDeposit(_)
                 | TxOutput::Htlc(_, _)
-                | TxOutput::CreateOrder(_) => None,
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => None,
                 TxOutput::IssueFungibleToken(issuance_data) => {
                     let result = make_token_id(
                         self.chain_config.as_ref(),
@@ -718,7 +721,8 @@ where
             | TxOutput::DelegateStaking(_, _)
             | TxOutput::IssueFungibleToken(_)
             | TxOutput::IssueNft(_, _, _)
-            | TxOutput::DataDeposit(_) => Ok(()),
+            | TxOutput::DataDeposit(_)
+            | TxOutput::ZkBatchSettlement(_) => Ok(()),
         };
 
         let check_order_doesnt_use_frozen_token = |order_id| {
@@ -896,7 +900,8 @@ where
                 | TxOutput::IssueNft(..)
                 | TxOutput::DataDeposit(..)
                 | TxOutput::IssueFungibleToken(..)
-                | TxOutput::Htlc(_, _) => None,
+                | TxOutput::Htlc(_, _)
+                | TxOutput::ZkBatchSettlement(..) => None,
                 TxOutput::CreateOrder(order_data) => match make_order_id(tx.inputs()) {
                     Ok(order_id) => {
                         let result = self

@@ -19,7 +19,7 @@ use common::{
     chain::{
         ChainConfig, DelegationId, Destination, PoolId, TxOutput, htlc::HashedTimelockContract,
         output_value::OutputValue, stakelock::StakePoolData, timelock::OutputTimeLock,
-        tokens::TokenId,
+        tokens::TokenId, zk::ZkBatchSettlementData,
     },
     primitives::amount::{RpcAmountIn, RpcAmountOut},
 };
@@ -193,6 +193,9 @@ pub enum RpcTxOutput {
         ask_value: RpcOutputValueOut,
         give_value: RpcOutputValueOut,
     },
+    ZkBatchSettlement {
+        data: ZkBatchSettlementData,
+    },
 }
 
 impl RpcTxOutput {
@@ -262,6 +265,7 @@ impl RpcTxOutput {
                     data.give().clone(),
                 )?,
             },
+            TxOutput::ZkBatchSettlement(data) => RpcTxOutput::ZkBatchSettlement { data },
         };
         Ok(result)
     }

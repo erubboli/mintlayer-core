@@ -35,7 +35,8 @@ pub fn get_issuance_count_via_tokens_op(outputs: &[TxOutput]) -> usize {
             | TxOutput::DelegateStaking(_, _)
             | TxOutput::DataDeposit(_)
             | TxOutput::Htlc(_, _)
-            | TxOutput::CreateOrder(_) => false,
+            | TxOutput::CreateOrder(_)
+            | TxOutput::ZkBatchSettlement(_) => false,
             TxOutput::IssueFungibleToken(_) | TxOutput::IssueNft(_, _, _) => true,
         })
         .count()
@@ -78,7 +79,8 @@ pub fn is_token_or_nft_issuance(output: &TxOutput) -> bool {
         | TxOutput::DelegateStaking(_, _)
         | TxOutput::DataDeposit(_)
         | TxOutput::Htlc(_, _)
-        | TxOutput::CreateOrder(_) => false,
+        | TxOutput::CreateOrder(_)
+        | TxOutput::ZkBatchSettlement(_) => false,
         TxOutput::IssueFungibleToken(_) | TxOutput::IssueNft(_, _, _) => true,
     }
 }
@@ -103,7 +105,8 @@ pub fn get_referenced_token_ids_ignore_issuance(output: &TxOutput) -> SmallVec<[
         | TxOutput::CreateDelegationId(_, _)
         | TxOutput::DelegateStaking(_, _)
         | TxOutput::DataDeposit(_)
-        | TxOutput::IssueFungibleToken(_) => SmallVec::new(),
+        | TxOutput::IssueFungibleToken(_)
+        | TxOutput::ZkBatchSettlement(_) => SmallVec::new(),
         TxOutput::IssueNft(token_id, _, _) => SmallVec::from_iter([*token_id]),
     }
 }

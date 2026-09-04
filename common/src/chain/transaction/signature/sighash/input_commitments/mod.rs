@@ -358,7 +358,8 @@ where
                 | TxOutput::IssueNft(_, _, _)
                 | TxOutput::DataDeposit(_)
                 | TxOutput::Htlc(_, _)
-                | TxOutput::CreateOrder(_) => Ok(SighashInputCommitment::Utxo(utxo)),
+                | TxOutput::CreateOrder(_)
+                | TxOutput::ZkBatchSettlement(_) => Ok(SighashInputCommitment::Utxo(utxo)),
             }
         }
         TxInput::Account(_) => Ok(SighashInputCommitment::None),

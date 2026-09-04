@@ -180,7 +180,8 @@ fn pool_id_from_txo(utxo: &TxOutput) -> Option<PoolId> {
         | TxOutput::IssueFungibleToken(_)
         | TxOutput::DelegateStaking(_, _)
         | TxOutput::CreateDelegationId(_, _)
-        | TxOutput::DataDeposit(_) => None,
+        | TxOutput::DataDeposit(_)
+        | TxOutput::ZkBatchSettlement(_) => None,
     }
 }
 
@@ -214,7 +215,8 @@ where
         | TxOutput::CreateStakePool(_, _)
         | TxOutput::DelegateStaking(_, _)
         | TxOutput::CreateDelegationId(_, _)
-        | TxOutput::DataDeposit(_) => Ok((utxo, PtxAdditionalInfo::new())),
+        | TxOutput::DataDeposit(_)
+        | TxOutput::ZkBatchSettlement(_) => Ok((utxo, PtxAdditionalInfo::new())),
     }
 }
 
